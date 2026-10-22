@@ -118,7 +118,7 @@ jobs:
               uuid.UUID(job_id)
           if bool(job_id) != bool(folder_id):
               raise SystemExit("Provide both job_id and pixeldrain_job_path, or leave both empty for a health check")
-          notebook = os.environ.get("NOTEBOOK_URL", "https://molab.marimo.io/notebooks/nb_jto8ABNt6hR63odUKU4UuJ")
+          notebook = os.environ.get("NOTEBOOK_URL", "").strip() or "https://molab.marimo.io/notebooks/nb_jto8ABNt6hR63odUKU4UuJ"
           parsed = urlparse(notebook)
           if parsed.scheme != "https" or parsed.hostname != "molab.marimo.io":
               raise SystemExit("MOLAB_NOTEBOOK_URL must point to molab.marimo.io over HTTPS")
