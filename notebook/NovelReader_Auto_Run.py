@@ -309,7 +309,10 @@ def _(google_api_ready, mo):
             try:
                 with worker_lock:
                     api = drive_client()
-                    app_folders = drive_list(api, "name='NovelReader_Auto_Run' and mimeType='application/vnd.google-apps.folder' and trashed=false")
+                    # Match the root used by app.drive.DriveStore in the Telegram bot.
+                    # Searching Drive-wide can select an unrelated folder with the same name.
+                    drive_root_id = os.environ.get("GDRIVE_ROOT_FOLDER_ID", "").strip() or "root"
+                    app_folders = drive_list(api, f"'{drive_root_id}' in parents and name='NovelReader_Auto_Run' and mimeType='application/vnd.google-apps.folder' and trashed=false")
                     if not app_folders:
                         raise RuntimeError("Không tìm thấy thư mục NovelReader_Auto_Run trên Drive")
                     app_id = app_folders[0]["id"]
