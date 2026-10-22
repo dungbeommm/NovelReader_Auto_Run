@@ -37,6 +37,8 @@ class ConfigContractTests(unittest.TestCase):
             set_path(config, "audio.workers", "many")
         with self.assertRaises(ValueError):
             set_path(config, "audio.enabled", "sometimes")
+        with self.assertRaises(ValueError):
+            set_path(config, "audio.speed", "nan")
 
     def test_schema_rejects_unsupported_format(self):
         config = json.loads(json.dumps(DEFAULT_CONFIG))

@@ -6,6 +6,7 @@ requires-python = ">=3.11"
 dependencies = [
   "jsonschema>=4.23,<5",
   "requests>=2.32,<3",
+  "boto3>=1.35,<2",
 ]
 
 [tool.ruff]

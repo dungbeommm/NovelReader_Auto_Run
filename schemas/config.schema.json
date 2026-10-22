@@ -4,15 +4,17 @@
   "title": "NovelReader Auto Run configuration",
   "type": "object",
   "additionalProperties": false,
-  "required": ["source_language", "target_language", "compute", "translation", "audio", "merge", "export", "pixeldrain"],
+  "required": ["source_language", "target_language", "compute", "translation", "audio", "merge", "export", "storage"],
   "properties": {
     "source_language": {"const": "zh"},
     "target_language": {"const": "vi"},
-    "compute": {"type": "object", "required": ["provider", "device"], "properties": {"provider": {"const": "molab"}, "device": {"enum": ["auto", "cpu", "cuda"]}}, "additionalProperties": false},
-    "translation": {"type": "object", "required": ["enabled", "backend", "model", "beam_size", "chunk_mode", "normalize_mode", "glossary", "honorific_mode", "pronoun_harmonizer"], "properties": {"enabled": {"type": "boolean"}, "backend": {"enum": ["ct2", "transformers", "gradio"]}, "model": {"type": "string", "minLength": 1}, "beam_size": {"type": "integer", "minimum": 1, "maximum": 8}, "chunk_mode": {"enum": ["sentence", "paragraph", "auto"]}, "normalize_mode": {"enum": ["auto", "t2s", "s2t", "off"]}, "glossary": {"type": "string"}, "honorific_mode": {"enum": ["off", "safe", "xianxia_strict"]}, "pronoun_harmonizer": {"type": "boolean"}}, "additionalProperties": false},
+    "compute": {"type": "object", "required": ["provider", "device"], "properties": {"provider": {"const": "molab"}, "device": {"const": "auto"}}, "additionalProperties": false},
+    "translation": {"type": "object", "required": ["enabled", "backend", "model", "beam_size", "chunk_mode", "normalize_mode", "glossary", "honorific_mode", "pronoun_harmonizer"], "properties": {"enabled": {"const": true}, "backend": {"enum": ["ct2", "transformers"]}, "model": {"type": "string", "minLength": 1}, "beam_size": {"type": "integer", "minimum": 1, "maximum": 8}, "chunk_mode": {"enum": ["sentence", "paragraph", "auto"]}, "normalize_mode": {"enum": ["auto", "t2s", "s2t", "off"]}, "glossary": {"type": "string", "maxLength": 1000}, "honorific_mode": {"enum": ["off", "safe", "xianxia_strict"]}, "pronoun_harmonizer": {"type": "boolean"}}, "additionalProperties": false},
     "audio": {"type": "object", "required": ["enabled", "engine", "voice", "speed", "format", "bitrate", "sample_rate", "workers", "noise_scale", "noise_w_scale", "vieneu_temperature", "vieneu_top_p", "vieneu_batch_size"], "properties": {"enabled": {"type": "boolean"}, "engine": {"enum": ["piper", "vieneu"]}, "voice": {"type": "string"}, "speed": {"type": "number", "minimum": 0.5, "maximum": 2.0}, "format": {"enum": ["mp3", "wav", "ogg", "m4b", "m4a", "opus"]}, "bitrate": {"enum": ["64k", "96k", "128k", "192k"]}, "sample_rate": {"type": "integer", "minimum": 0}, "workers": {"type": "integer", "minimum": 1, "maximum": 4}, "noise_scale": {"type": "number", "minimum": 0, "maximum": 2}, "noise_w_scale": {"type": "number", "minimum": 0, "maximum": 2}, "vieneu_temperature": {"type": "number", "minimum": 0, "maximum": 2}, "vieneu_top_p": {"type": "number", "minimum": 0, "maximum": 1}, "vieneu_batch_size": {"type": "integer", "minimum": 1, "maximum": 64}}, "additionalProperties": false},
-    "merge": {"type": "object", "required": ["enabled", "chapters_per_file"], "properties": {"enabled": {"type": "boolean"}, "chapters_per_file": {"type": "integer", "minimum": 1}}, "additionalProperties": false},
+    "merge": {"type": "object", "required": ["enabled", "chapters_per_file"], "properties": {"enabled": {"type": "boolean"}, "chapters_per_file": {"type": "integer", "minimum": 2, "maximum": 500}}, "additionalProperties": false},
     "export": {"type": "object", "required": ["txt", "epub", "chapter_audio", "keep_chapter_audio"], "properties": {"txt": {"type": "boolean"}, "epub": {"type": "boolean"}, "chapter_audio": {"type": "boolean"}, "keep_chapter_audio": {"type": "boolean"}}, "additionalProperties": false},
-    "pixeldrain": {"type": "object", "required": ["sharing"], "properties": {"sharing": {"enum": ["private", "link_reader"]}}, "additionalProperties": false}
-  }
+    "storage": {"type": "object", "required": ["sharing"], "properties": {"sharing": {"enum": ["private", "link_reader"]}}, "additionalProperties": false}
+  },
+  "if": {"properties": {"merge": {"properties": {"enabled": {"const": true}}}, "audio": {"properties": {"enabled": {"const": true}}}}},
+  "then": {"properties": {"audio": {"properties": {"format": {"enum": ["mp3", "wav", "m4b", "m4a", "opus"]}}}}}
 }

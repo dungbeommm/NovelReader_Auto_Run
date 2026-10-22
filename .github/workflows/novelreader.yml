@@ -6,26 +6,16 @@ on:
   pull_request:
   schedule:
     - cron: "*/5 * * * *"
-  repository_dispatch:
-    types: [novelreader_job]
   workflow_dispatch:
     inputs:
       mode:
-        description: Run a safe configuration check or poll Telegram once
+        description: Check storage or poll Telegram once
         required: true
         default: health-check
         type: choice
         options:
           - health-check
           - poll-telegram
-      job_id:
-        description: Optional job UUID when manually validating a queued job
-        required: false
-        type: string
-      pixeldrain_job_path:
-        description: Pixeldrain path for the queued job
-        required: false
-        type: string
 
 permissions:
   contents: read
@@ -59,29 +49,23 @@ jobs:
           python-version: "3.12"
           cache: pip
       - run: pip install -r requirements.txt
-      - name: Validate Pixeldrain API key
-        env:
-          PIXELDRAIN_API_KEY: ${{ secrets.PIXELDRAIN_API_KEY }}
-        run: |
-          python - <<'PY'
-          from app.pixeldrain import require_api_key
-          require_api_key()
-          print("Pixeldrain API key is configured; secret value was not printed")
-          PY
-      - name: Poll Telegram and deliver persisted notifications
+      - name: Poll Telegram and deliver notifications
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           ALLOWED_TELEGRAM_USER_IDS: ${{ secrets.ALLOWED_TELEGRAM_USER_IDS }}
+          STORAGE_BACKEND: ${{ vars.STORAGE_BACKEND || 'r2' }}
+          R2_ACCOUNT_ID: ${{ vars.R2_ACCOUNT_ID }}
+          R2_BUCKET: ${{ vars.R2_BUCKET }}
+          R2_ROOT_PREFIX: ${{ vars.R2_ROOT_PREFIX }}
+          R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
           PIXELDRAIN_API_KEY: ${{ secrets.PIXELDRAIN_API_KEY }}
           PIXELDRAIN_ROOT_PATH: ${{ vars.PIXELDRAIN_ROOT_PATH }}
-          GITHUB_REPOSITORY: ${{ github.repository }}
-          GH_DISPATCH_TOKEN: ${{ secrets.GH_DISPATCH_TOKEN }}
         run: python -m app.telegram_bot --poll-seconds 220
 
-  validate-job-request:
-    if: github.event_name == 'repository_dispatch' || (github.event_name == 'workflow_dispatch' && inputs.mode == 'health-check')
+  health-check:
+    if: github.event_name == 'workflow_dispatch' && inputs.mode == 'health-check'
     runs-on: ubuntu-latest
-    timeout-minutes: 3
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -89,41 +73,20 @@ jobs:
           python-version: "3.12"
           cache: pip
       - run: pip install -r requirements.txt
-      - name: Validate Pixeldrain API key
+      - name: Check storage connection
         env:
+          STORAGE_BACKEND: ${{ vars.STORAGE_BACKEND || 'r2' }}
+          R2_ACCOUNT_ID: ${{ vars.R2_ACCOUNT_ID }}
+          R2_BUCKET: ${{ vars.R2_BUCKET }}
+          R2_ROOT_PREFIX: ${{ vars.R2_ROOT_PREFIX }}
+          R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
           PIXELDRAIN_API_KEY: ${{ secrets.PIXELDRAIN_API_KEY }}
+          PIXELDRAIN_ROOT_PATH: ${{ vars.PIXELDRAIN_ROOT_PATH }}
         run: |
           python - <<'PY'
-          from app.pixeldrain import require_api_key
-          require_api_key()
-          print("Pixeldrain API key is configured; secret value was not printed")
-          PY
-      - name: Validate request and notebook URL
-        env:
-          EVENT_NAME: ${{ github.event_name }}
-          JOB_ID: ${{ github.event.client_payload.job_id || inputs.job_id }}
-          PIXELDRAIN_JOB_PATH: ${{ github.event.client_payload.pixeldrain_job_path || inputs.pixeldrain_job_path }}
-          NOTEBOOK_URL: ${{ vars.MOLAB_NOTEBOOK_URL }}
-        run: |
-          python - <<'PY'
-          import os
-          import uuid
-          from urllib.parse import urlparse
-          event = os.environ.get("EVENT_NAME", "")
-          job_id = os.environ.get("JOB_ID", "")
-          folder_id = os.environ.get("PIXELDRAIN_JOB_PATH", "")
-          if event == "repository_dispatch" and (not job_id or not folder_id):
-              raise SystemExit("Repository dispatch requires both job_id and pixeldrain_job_path")
-          if job_id:
-              uuid.UUID(job_id)
-          if bool(job_id) != bool(folder_id):
-              raise SystemExit("Provide both job_id and pixeldrain_job_path, or leave both empty for a health check")
-          notebook = os.environ.get("NOTEBOOK_URL", "").strip() or "https://molab.marimo.io/notebooks/nb_jto8ABNt6hR63odUKU4UuJ"
-          parsed = urlparse(notebook)
-          if parsed.scheme != "https" or parsed.hostname != "molab.marimo.io":
-              raise SystemExit("MOLAB_NOTEBOOK_URL must point to molab.marimo.io over HTTPS")
-          if job_id:
-              print(f"Request accepted for job={job_id}; keep the MoLab worker active at {notebook}")
-          else:
-              print(f"Health check passed; no job payload supplied. Notebook URL: {notebook}")
+          from app.storage import create_store
+          store = create_store()
+          store.list_children(store.root_id)
+          print(f"Storage connection OK: {type(store).__name__}")
           PY
