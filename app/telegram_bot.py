@@ -50,7 +50,13 @@ def set_path(document: dict[str, Any], dotted: str, value: Any) -> None:
     old = cursor[keys[-1]]
     try:
         if isinstance(old, bool):
-            value = value.lower() in ("true", "yes", "1", "on") if isinstance(value, str) else bool(value)
+            if isinstance(value, str):
+                normalized = value.strip().lower()
+                if normalized not in ("true", "yes", "1", "on", "false", "no", "0", "off"):
+                    raise ValueError
+                value = normalized in ("true", "yes", "1", "on")
+            elif not isinstance(value, bool):
+                raise ValueError
         elif isinstance(old, int) and not isinstance(old, bool):
             value = int(value)
         elif isinstance(old, float):

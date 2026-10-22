@@ -8,7 +8,7 @@ Secrets:
 
 - `TELEGRAM_BOT_TOKEN`
 - `ALLOWED_TELEGRAM_USER_IDS` — ID số Telegram, phân cách dấu phẩy
-- `GDRIVE_OAUTH_TOKEN_JSON` — OAuth JSON có refresh token và quyền Google Drive
+- `GDRIVE_OAUTH_TOKEN_JSON` — OAuth authorized-user JSON có refresh token, hoặc service-account JSON hợp lệ
 - `GH_DISPATCH_TOKEN` — fine-grained token có quyền repository `Contents: write` để gọi repository dispatch
 
 Variables:
@@ -16,7 +16,7 @@ Variables:
 - `GDRIVE_ROOT_FOLDER_ID` — tùy chọn; mặc định Drive root
 - `MOLAB_NOTEBOOK_URL` — dùng URL notebook ở trên
 
-Trong runtime MoLab, cấu hình cùng `GDRIVE_OAUTH_TOKEN_JSON` dưới dạng secret/biến môi trường. Giữ notebook worker chạy để nhận job; GitHub Actions poll Telegram theo lịch 5 phút/lượt. Runner không duy trì bot online liên tục.
+Trong runtime MoLab, cấu hình cùng `GDRIVE_OAUTH_TOKEN_JSON` dưới dạng secret/biến môi trường. Nếu dùng service account, chia sẻ thư mục Drive đích cho địa chỉ `client_email` của service account. Giữ notebook worker chạy để nhận job; GitHub Actions poll Telegram theo lịch 5 phút/lượt. Runner không duy trì bot online liên tục.
 
 ## Telegram
 

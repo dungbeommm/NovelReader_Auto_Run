@@ -1,6 +1,7 @@
 """MoLab notebook worker. Attach Drive OAuth as GDRIVE_OAUTH_TOKEN_JSON before running."""
 import marimo
 
+__generated_with = "0.25.2"
 app = marimo.App(width="full")
 
 
@@ -17,7 +18,20 @@ def _(mo):
 
 
 @app.cell
-def _(mo):
+def _():
+    import importlib.util
+    import subprocess as _bootstrap_subprocess
+    import sys as _bootstrap_sys
+
+    if importlib.util.find_spec("googleapiclient") is None:
+        _bootstrap_subprocess.run([_bootstrap_sys.executable, "-m", "pip", "install",
+            "google-api-python-client>=2.150,<3", "google-auth>=2.35,<3"], check=True)
+    google_api_ready = True
+    return (google_api_ready,)
+
+
+@app.cell
+def _(google_api_ready, mo):
     import hashlib
     import json
     import logging
@@ -35,6 +49,7 @@ def _(mo):
 
     import marimo as mo
     from google.oauth2.credentials import Credentials
+    from google.oauth2 import service_account
     from google.auth.transport.requests import Request
     from googleapiclient.discovery import build
     from googleapiclient.http import MediaFileUpload, MediaInMemoryUpload, MediaIoBaseDownload
@@ -54,14 +69,36 @@ def _(mo):
         raw = os.environ.get("GDRIVE_OAUTH_TOKEN_JSON", "")
         if not raw:
             raise RuntimeError("Thiếu GDRIVE_OAUTH_TOKEN_JSON trong biến môi trường MoLab.")
-        creds = Credentials.from_authorized_user_info(json.loads(raw), scopes=["https://www.googleapis.com/auth/drive"])
+        try:
+            info = json.loads(raw)
+        except json.JSONDecodeError as exc:
+            raise RuntimeError("GDRIVE_OAUTH_TOKEN_JSON phải là nội dung JSON credentials, không phải API key hoặc đường dẫn file.") from exc
+        if not isinstance(info, dict):
+            raise RuntimeError("GDRIVE_OAUTH_TOKEN_JSON phải là một JSON object.")
+        try:
+            if info.get("type") == "service_account":
+                creds = service_account.Credentials.from_service_account_info(
+                    info, scopes=["https://www.googleapis.com/auth/drive"])
+            else:
+                creds = Credentials.from_authorized_user_info(
+                    info, scopes=["https://www.googleapis.com/auth/drive"])
+        except (ValueError, KeyError, TypeError) as exc:
+            raise RuntimeError("Credentials phải là OAuth authorized-user có refresh_token hoặc service-account JSON hợp lệ.") from exc
         if creds.expired and creds.refresh_token:
             creds.refresh(Request())
         return build("drive", "v3", credentials=creds, cache_discovery=False)
 
     def drive_list(api, query):
-        return api.files().list(q=query, fields="files(id,name,mimeType,size,webViewLink)", pageSize=100,
-            supportsAllDrives=True, includeItemsFromAllDrives=True).execute().get("files", [])
+        rows = []
+        page_token = None
+        while True:
+            result = api.files().list(q=query, fields="nextPageToken,files(id,name,mimeType,size,webViewLink)",
+                pageSize=100, pageToken=page_token, supportsAllDrives=True,
+                includeItemsFromAllDrives=True).execute()
+            rows.extend(result.get("files", []))
+            page_token = result.get("nextPageToken")
+            if not page_token:
+                return rows
 
     def drive_find(api, parent_id, name):
         esc = name.replace("'", "\\'")

@@ -2,6 +2,7 @@
 .venv/
 __pycache__/
 *.py[cod]
+notebook/__marimo__/
 .pytest_cache/
 .ruff_cache/
 *.epub

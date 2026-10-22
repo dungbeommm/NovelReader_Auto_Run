@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import Any
 
 from google.oauth2.credentials import Credentials
+from google.oauth2 import service_account
 from google.auth.transport.requests import Request
 from googleapiclient.discovery import build
 from googleapiclient.http import MediaFileUpload, MediaIoBaseDownload
@@ -14,22 +15,48 @@ from googleapiclient.http import MediaFileUpload, MediaIoBaseDownload
 SCOPE = "https://www.googleapis.com/auth/drive"
 
 
+def credentials_from_json(raw: str):
+    try:
+        info = json.loads(raw)
+    except json.JSONDecodeError as exc:
+        raise RuntimeError(
+            "GDRIVE_OAUTH_TOKEN_JSON must contain raw Google credential JSON, not a path or an API key. "
+            "Use an authorized-user token JSON with refresh_token, or a service-account JSON."
+        ) from exc
+    if not isinstance(info, dict):
+        raise RuntimeError("GDRIVE_OAUTH_TOKEN_JSON must be a JSON object")
+    try:
+        if info.get("type") == "service_account":
+            return service_account.Credentials.from_service_account_info(info, scopes=[SCOPE])
+        return Credentials.from_authorized_user_info(info, scopes=[SCOPE])
+    except (ValueError, KeyError, TypeError) as exc:
+        raise RuntimeError(
+            "GDRIVE_OAUTH_TOKEN_JSON is not an authorized-user token or service-account credential. "
+            "For OAuth, provide the token JSON containing token, refresh_token, client_id, client_secret and token_uri."
+        ) from exc
+
+
 class DriveStore:
     def __init__(self) -> None:
         token = os.environ.get("GDRIVE_OAUTH_TOKEN_JSON", "").strip()
         if not token:
             raise RuntimeError("GDRIVE_OAUTH_TOKEN_JSON is missing")
-        data = json.loads(token)
-        self.credentials = Credentials.from_authorized_user_info(data, scopes=[SCOPE])
+        self.credentials = credentials_from_json(token)
         if self.credentials.expired and self.credentials.refresh_token:
             self.credentials.refresh(Request())
         self.api = build("drive", "v3", credentials=self.credentials, cache_discovery=False)
         self.root_id = os.environ.get("GDRIVE_ROOT_FOLDER_ID", "").strip() or "root"
 
     def _list(self, query: str, fields: str = "files(id,name,mimeType,modifiedTime,size,webViewLink)") -> list[dict[str, Any]]:
-        result = self.api.files().list(q=query, fields=fields, pageSize=100, supportsAllDrives=True,
-                                       includeItemsFromAllDrives=True).execute()
-        return result.get("files", [])
+        rows: list[dict[str, Any]] = []
+        page_token = None
+        while True:
+            result = self.api.files().list(q=query, fields=f"nextPageToken,{fields}", pageSize=100,
+                pageToken=page_token, supportsAllDrives=True, includeItemsFromAllDrives=True).execute()
+            rows.extend(result.get("files", []))
+            page_token = result.get("nextPageToken")
+            if not page_token:
+                return rows
 
     def list_children(self, parent_id: str) -> list[dict[str, Any]]:
         return self._list(f"'{parent_id}' in parents and trashed=false")
