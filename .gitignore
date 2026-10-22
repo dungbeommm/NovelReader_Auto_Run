@@ -9,6 +9,9 @@ notebook/__marimo__/
 *.sqlite3*
 output/
 secrets/
+*_client_secret*.json
+client_secret*.json
+*.vtt
 .mcp-windows-src/
 quy_trinh_v2_tham_khao_NovelReader_Molab.md
 

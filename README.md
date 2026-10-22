@@ -27,7 +27,7 @@ Trong runtime MoLab, đặt `PIXELDRAIN_API_KEY` và, nếu đã đổi thư m�
 - EPUB trên 20 MB hiện bị từ chối theo giới hạn tải của Telegram Bot API trong ứng dụng này.
 - Mặc định `pixeldrain.sharing=link_reader`: worker chỉ chia sẻ thư mục `result` khi hoàn tất. Có thể đặt `private` để giữ kết quả riêng tư, khi đó bot không có link công khai để gửi.
 
-Các job, preset và checkpoint cũ trên Google Drive không được tự động chuyển sang Pixeldrain. Tạo job mới sau khi cấu hình Pixeldrain.
+Tạo job mới sau khi cấu hình Pixeldrain.
 
 ## Phạm vi còn thiếu
 
