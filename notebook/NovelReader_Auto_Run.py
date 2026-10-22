@@ -67,27 +67,49 @@ def _(google_api_ready, mo):
     NOVELREADER_COMMIT = os.getenv("NOVELREADER_COMMIT", "920a1d4464e377d6c03fd53da017f2a00b709b66")
     BOT_APP_FOLDER = "NovelReader_Auto_Run"
 
-    def drive_client():
-        raw = os.environ.get("GDRIVE_OAUTH_TOKEN_JSON", "")
-        if not raw:
-            raise RuntimeError("Thiếu GDRIVE_OAUTH_TOKEN_JSON trong biến môi trường MoLab.")
+    def credential_info(raw):
         value = raw.strip()
+        if value.startswith("GDRIVE_OAUTH_TOKEN_JSON="):
+            value = value.split("=", 1)[1].strip()
+        if len(value) >= 2 and value[0] == value[-1] == "'":
+            value = value[1:-1].strip()
+        value = value.strip().lstrip("\ufeff")
         if value.startswith("```") and value.endswith("```"):
             value = value.removeprefix("```").removesuffix("```").strip()
             if value.lower().startswith("json"):
                 value = value[4:].lstrip()
+        if value.lower().startswith("data:application/json;base64,"):
+            value = value.split(",", 1)[1]
+        elif value.lower().startswith(("base64:", "base64,")):
+            value = value[7:]
         try:
             info = json.loads(value)
-            if isinstance(info, str):
-                info = json.loads(info)
         except json.JSONDecodeError:
+            info = None
+        if isinstance(info, str):
             try:
-                decoded = base64.b64decode(value + "=" * (-len(value) % 4), validate=True).decode("utf-8-sig")
-                info = json.loads(decoded)
-            except (binascii.Error, UnicodeDecodeError, json.JSONDecodeError) as exc:
-                raise RuntimeError("GDRIVE_OAUTH_TOKEN_JSON must be raw Google credential JSON or Base64-encoded JSON; API keys, file paths, and OAuth client-only credentials.json files cannot access Drive.") from exc
+                info = json.loads(info)
+            except json.JSONDecodeError:
+                value = info
+                info = None
         if not isinstance(info, dict):
-            raise RuntimeError("GDRIVE_OAUTH_TOKEN_JSON phải là một JSON object.")
+            encoded = "".join(value.split()).strip("\"'")
+            try:
+                decoded = base64.b64decode(encoded + "=" * (-len(encoded) % 4), altchars=b"-_", validate=True)
+                info = json.loads(decoded.decode("utf-8-sig"))
+                if isinstance(info, str):
+                    info = json.loads(info)
+            except (binascii.Error, UnicodeDecodeError, json.JSONDecodeError, ValueError) as exc:
+                raise RuntimeError("GDRIVE_OAUTH_TOKEN_JSON is not valid JSON or Base64 JSON. Store credential file contents, not a path or API key; wrapped Base64 and data:application/json;base64 values are supported.") from exc
+        if not isinstance(info, dict):
+            raise RuntimeError("GDRIVE_OAUTH_TOKEN_JSON must decode to a JSON object.")
+        return info
+
+    def drive_client():
+        raw = os.environ.get("GDRIVE_OAUTH_TOKEN_JSON", "")
+        if not raw:
+            raise RuntimeError("Thiếu GDRIVE_OAUTH_TOKEN_JSON trong biến môi trường MoLab.")
+        info = credential_info(raw)
         try:
             if info.get("type") == "service_account":
                 creds = service_account.Credentials.from_service_account_info(
@@ -96,6 +118,8 @@ def _(google_api_ready, mo):
                 creds = Credentials.from_authorized_user_info(
                     info, scopes=["https://www.googleapis.com/auth/drive"])
         except (ValueError, KeyError, TypeError) as exc:
+            if isinstance(info.get("installed"), dict) or isinstance(info.get("web"), dict):
+                raise RuntimeError("GDRIVE_OAUTH_TOKEN_JSON contains OAuth client configuration only; authorize once and use token JSON with refresh_token, or use service-account JSON.") from exc
             raise RuntimeError("Credentials phải là OAuth authorized-user có refresh_token hoặc service-account JSON hợp lệ.") from exc
         if creds.expired and creds.refresh_token:
             creds.refresh(Request())

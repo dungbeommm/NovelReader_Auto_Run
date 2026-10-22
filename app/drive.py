@@ -1,9 +1,9 @@
 """Small Google Drive JSON/file store used by the Actions bot and MoLab notebook."""
 from __future__ import annotations
 
-import json
 import base64
 import binascii
+import json
 import os
 from pathlib import Path
 from typing import Any
@@ -17,35 +17,66 @@ from googleapiclient.http import MediaFileUpload, MediaIoBaseDownload
 SCOPE = "https://www.googleapis.com/auth/drive"
 
 
-def credentials_from_json(raw: str):
+def _credential_info(raw: str) -> dict[str, Any]:
     value = raw.strip()
+    if value.startswith("GDRIVE_OAUTH_TOKEN_JSON="):
+        value = value.split("=", 1)[1].strip()
+    if len(value) >= 2 and value[0] == value[-1] == "'":
+        value = value[1:-1].strip()
+    value = value.strip().lstrip("\ufeff")
     if value.startswith("```") and value.endswith("```"):
         value = value.removeprefix("```").removesuffix("```").strip()
         if value.lower().startswith("json"):
             value = value[4:].lstrip()
 
+    is_data_uri = value.lower().startswith("data:application/json;base64,")
+    if is_data_uri:
+        value = value.split(",", 1)[1]
+    elif value.lower().startswith(("base64:", "base64,")):
+        value = value[7:] if value[6] == ":" else value[7:]
+
     try:
         info = json.loads(value)
+    except json.JSONDecodeError:
+        info = None
+    if isinstance(info, str):
+        try:
+            info = json.loads(info)
+        except json.JSONDecodeError:
+            value = info
+            info = None
+    if isinstance(info, dict):
+        return info
+
+    # Base64 can be line-wrapped or URL-safe, depending on how it was copied.
+    encoded = "".join(value.split()).strip("\"'")
+    try:
+        decoded = base64.b64decode(encoded + "=" * (-len(encoded) % 4), altchars=b"-_", validate=True)
+        info = json.loads(decoded.decode("utf-8-sig"))
         if isinstance(info, str):
             info = json.loads(info)
-    except json.JSONDecodeError:
-        # GitHub Secrets often use base64 to preserve multiline JSON exactly.
-        try:
-            decoded = base64.b64decode(value + "=" * (-len(value) % 4), validate=True).decode("utf-8-sig")
-            info = json.loads(decoded)
-        except (binascii.Error, UnicodeDecodeError, json.JSONDecodeError) as exc:
-            raise RuntimeError(
-                "GDRIVE_OAUTH_TOKEN_JSON must be raw Google credential JSON or its Base64 encoding. "
-                "Use an authorized-user token JSON with refresh_token, or a service-account JSON; "
-                "an API key, file path, or OAuth client-only credentials.json cannot access Drive."
-            ) from exc
+    except (binascii.Error, UnicodeDecodeError, json.JSONDecodeError, ValueError) as exc:
+        raise RuntimeError(
+            "GDRIVE_OAUTH_TOKEN_JSON is not valid JSON or Base64 JSON. Store the credential file contents "
+            "(not its path or an API key); wrapped Base64 and data:application/json;base64 values are supported."
+        ) from exc
     if not isinstance(info, dict):
-        raise RuntimeError("GDRIVE_OAUTH_TOKEN_JSON must be a JSON object")
+        raise RuntimeError("GDRIVE_OAUTH_TOKEN_JSON must decode to a JSON object")
+    return info
+
+
+def credentials_from_json(raw: str):
+    info = _credential_info(raw)
     try:
         if info.get("type") == "service_account":
             return service_account.Credentials.from_service_account_info(info, scopes=[SCOPE])
         return Credentials.from_authorized_user_info(info, scopes=[SCOPE])
     except (ValueError, KeyError, TypeError) as exc:
+        if isinstance(info.get("installed"), dict) or isinstance(info.get("web"), dict):
+            raise RuntimeError(
+                "GDRIVE_OAUTH_TOKEN_JSON contains OAuth client configuration only. Authorize it once and use the "
+                "resulting token JSON with refresh_token, or use a service-account JSON."
+            ) from exc
         raise RuntimeError(
             "GDRIVE_OAUTH_TOKEN_JSON is not an authorized-user token or service-account credential. "
             "For OAuth, provide the token JSON containing token, refresh_token, client_id, client_secret and token_uri."
