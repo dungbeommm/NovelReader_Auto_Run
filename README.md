@@ -1,31 +1,34 @@
 # NovelReader Auto Run
 
-Bot Telegram nhận EPUB tiếng Trung, tải truyện và manifest lên Google Drive, hiển thị cấu hình cùng nút **Bắt đầu**, rồi dispatch job sang GitHub Actions. Notebook MoLab `https://molab.marimo.io/notebooks/nb_jto8ABNt6hR63odUKU4UuJ` dùng worker tại `notebook/NovelReader_Auto_Run.py` để tìm job trên Drive, chạy NovelReader theo commit đã pin, checkpoint SQLite và upload kết quả.
+Bot Telegram nhận EPUB tiếng Trung, lưu EPUB và manifest trong Pixeldrain Filesystem, rồi dispatch job qua GitHub Actions. Notebook MoLab dùng worker tại `notebook/NovelReader_Auto_Run.py` để nhận job, chạy NovelReader, lưu checkpoint SQLite và tải kết quả lên Pixeldrain.
 
-## GitHub Actions secrets và variables
+Pixeldrain Filesystem yêu cầu tài khoản Pro hoặc Prepaid. Tạo API key tại [Pixeldrain API keys](https://pixeldrain.com/user/api_keys). Bot và notebook phải dùng cùng API key và cùng `PIXELDRAIN_ROOT_PATH`.
+
+## GitHub Actions
 
 Secrets:
 
 - `TELEGRAM_BOT_TOKEN`
-- `ALLOWED_TELEGRAM_USER_IDS` — ID số Telegram, phân cách dấu phẩy
-- `GDRIVE_OAUTH_TOKEN_JSON` — OAuth authorized-user JSON có refresh token, hoặc service-account JSON hợp lệ; có thể lưu JSON thô hoặc Base64 của JSON
-- `GH_DISPATCH_TOKEN` — fine-grained token có quyền repository `Contents: write` để gọi repository dispatch
+- `ALLOWED_TELEGRAM_USER_IDS` — các Telegram user ID, phân cách bằng dấu phẩy
+- `PIXELDRAIN_API_KEY`
+- `GH_DISPATCH_TOKEN` — token có quyền repository `Contents: write` để gửi dispatch
 
 Variables:
 
-- `GDRIVE_ROOT_FOLDER_ID` — tùy chọn; mặc định Drive root
-- `MOLAB_NOTEBOOK_URL` — dùng URL notebook ở trên
+- `PIXELDRAIN_ROOT_PATH` — tùy chọn, mặc định `/me`
+- `MOLAB_NOTEBOOK_URL` — URL notebook MoLab
 
-Trong runtime MoLab, cấu hình cùng `GDRIVE_OAUTH_TOKEN_JSON` dưới dạng secret/biến môi trường. Nếu dùng service account, chia sẻ thư mục Drive đích cho địa chỉ `client_email` của service account. JSON `credentials.json` chỉ có `installed`/`web` OAuth client là chưa đủ; cần token đã cấp quyền và có `refresh_token`. Giữ notebook worker chạy để nhận job; GitHub Actions poll Telegram theo lịch 5 phút/lượt. Runner không duy trì bot online liên tục.
+Trong runtime MoLab, đặt `PIXELDRAIN_API_KEY` và, nếu đã đổi thư mục gốc, `PIXELDRAIN_ROOT_PATH`. Giữ notebook worker chạy để nhận job. GitHub Actions poll Telegram mỗi 5 phút; runner không giữ bot online liên tục.
 
 ## Telegram
 
-- Gửi `.epub`; lần đầu bot hiển thị cấu hình mặc định đầy đủ. Dùng `/set nhóm.trường giá_trị` để chỉnh trước khi bấm **Bắt đầu**.
-- `/config` xem lại preset; `/status` xem tiến độ khi được gọi; `/result` lấy link Google Drive.
-- File trên 20 MB hiện bị từ chối theo giới hạn Telegram Bot API download.
+- Gửi `.epub`, chỉnh cấu hình bằng `/set <nhóm.trường> <giá trị>`, rồi bấm **Bắt đầu**.
+- `/config` xem preset; `/status` xem tiến độ; `/result` lấy link Pixeldrain.
+- EPUB trên 20 MB hiện bị từ chối theo giới hạn tải của Telegram Bot API trong ứng dụng này.
+- Mặc định `pixeldrain.sharing=link_reader`: worker chỉ chia sẻ thư mục `result` khi hoàn tất. Có thể đặt `private` để giữ kết quả riêng tư, khi đó bot không có link công khai để gửi.
 
-Drive mặc định riêng tư. Chỉ chọn `drive.sharing=link_reader` nếu muốn chia sẻ link cho người có liên kết.
+Các job, preset và checkpoint cũ trên Google Drive không được tự động chuyển sang Pixeldrain. Tạo job mới sau khi cấu hình Pixeldrain.
 
 ## Phạm vi còn thiếu
 
-Một workflow duy nhất `.github/workflows/novelreader.yml` chạy CI, poll Telegram theo lịch và xác thực yêu cầu dispatch. Chế độ `workflow_dispatch` có `health-check` và `poll-telegram`. Workflow không đăng nhập hoặc bấm Run trong giao diện MoLab; notebook worker vẫn cần được khởi chạy trong MoLab và giữ phiên hoạt động để xử lý job.
+Workflow xác thực dispatch nhưng không tự mở hay bấm Run trên MoLab. Notebook worker cần được khởi chạy và giữ phiên hoạt động để xử lý job.

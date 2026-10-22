@@ -1,4 +1,4 @@
-"""MoLab notebook worker. Attach Drive OAuth as GDRIVE_OAUTH_TOKEN_JSON before running."""
+"""MoLab notebook worker. Set PIXELDRAIN_API_KEY before running."""
 import marimo
 
 __generated_with = "0.25.2"
@@ -10,31 +10,23 @@ def _(mo):
     mo.md(r"""
     # NovelReader Auto Run
 
-    Notebook worker cho job Telegram. Worker chỉ đọc manifest đã xác nhận trong Google Drive;
-    checkpoint SQLite và artifact đều được đồng bộ lại Drive. Hãy cấu hình biến bí mật
-    `GDRIVE_OAUTH_TOKEN_JSON` trong runtime MoLab trước khi chạy notebook.
+    Notebook worker cho job Telegram. Worker chỉ đọc manifest đã xác nhận trong Pixeldrain;
+    checkpoint SQLite và artifact đều được đồng bộ lại Pixeldrain. Hãy cấu hình biến bí mật
+    `PIXELDRAIN_API_KEY` trong runtime MoLab trước khi chạy notebook.
     """)
     return
 
 
 @app.cell
 def _():
-    import importlib.util
-    import subprocess as _bootstrap_subprocess
-    import sys as _bootstrap_sys
-
-    if importlib.util.find_spec("googleapiclient") is None:
-        _bootstrap_subprocess.run([_bootstrap_sys.executable, "-m", "pip", "install",
-            "google-api-python-client>=2.150,<3", "google-auth>=2.35,<3"], check=True)
-    google_api_ready = True
-    return (google_api_ready,)
+    import requests as _requests
+    requests_ready = True
+    return (requests_ready,)
 
 
 @app.cell
-def _(google_api_ready, mo):
+def _(requests_ready, mo):
     import hashlib
-    import base64
-    import binascii
     import json
     import logging
     import os
@@ -50,11 +42,8 @@ def _(google_api_ready, mo):
     from pathlib import Path
 
     import marimo as mo
-    from google.oauth2.credentials import Credentials
-    from google.oauth2 import service_account
-    from google.auth.transport.requests import Request
-    from googleapiclient.discovery import build
-    from googleapiclient.http import MediaFileUpload, MediaInMemoryUpload, MediaIoBaseDownload
+    import requests
+    from urllib.parse import quote
 
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
     worker_log = logging.getLogger("novelreader.worker")
@@ -67,131 +56,97 @@ def _(google_api_ready, mo):
     NOVELREADER_COMMIT = os.getenv("NOVELREADER_COMMIT", "920a1d4464e377d6c03fd53da017f2a00b709b66")
     BOT_APP_FOLDER = "NovelReader_Auto_Run"
 
-    def credential_info(raw):
-        value = raw.strip()
-        if value.startswith("GDRIVE_OAUTH_TOKEN_JSON="):
-            value = value.split("=", 1)[1].strip()
-        if len(value) >= 2 and value[0] == value[-1] == "'":
-            value = value[1:-1].strip()
-        value = value.strip().lstrip("\ufeff")
-        if value.startswith("```") and value.endswith("```"):
-            value = value.removeprefix("```").removesuffix("```").strip()
-            if value.lower().startswith("json"):
-                value = value[4:].lstrip()
-        if value.lower().startswith("data:application/json;base64,"):
-            value = value.split(",", 1)[1]
-        elif value.lower().startswith(("base64:", "base64,")):
-            value = value[7:]
-        try:
-            info = json.loads(value)
-        except json.JSONDecodeError:
-            info = None
-        if isinstance(info, str):
+    def require_api_key():
+        key = os.environ.get("PIXELDRAIN_API_KEY", "").strip()
+        if not key:
+            raise RuntimeError("PIXELDRAIN_API_KEY is missing")
+        return key
+
+    class PixeldrainStore:
+        def __init__(self, api_key: str | None = None, root_id: str | None = None) -> None:
+            self.session = requests.Session()
+            self.session.auth = ("", api_key or require_api_key())
+            self.root_id = (root_id or os.environ.get("PIXELDRAIN_ROOT_PATH") or "/me").rstrip("/")
+            if not self.root_id.startswith("/me") or (self.root_id != "/me" and not self.root_id.startswith("/me/")):
+                raise ValueError("PIXELDRAIN_ROOT_PATH must be under /me")
+
+        @staticmethod
+        def child(parent: str, name: str) -> str:
+            if not name or name in (".", "..") or "/" in name or "\\" in name:
+                raise ValueError(f"Invalid Pixeldrain path component: {name!r}")
+            return parent.rstrip("/") + "/" + name
+
+        def _url(self, path: str) -> str:
+            if not path.startswith("/me/") and path != "/me":
+                raise ValueError("Pixeldrain path must be under /me")
+            return "https://pixeldrain.com/api/filesystem" + "/".join(quote(p, safe="") for p in path.split("/"))
+
+        def _request(self, method: str, path: str, **kwargs):
+            response = self.session.request(method, self._url(path), timeout=(20, 300), **kwargs)
+            response.raise_for_status()
+            return response
+
+        def stat(self, path: str) -> dict:
+            return self._request("GET", path, params={"stat": ""}).json()
+
+        def list_children(self, parent_id: str) -> list[dict]:
+            return self.stat(parent_id)["children"]
+
+        def find(self, parent_id: str, name: str) -> dict | None:
+            return next((row for row in self.list_children(parent_id) if row["name"] == name), None)
+
+        def ensure_folder(self, name: str, parent_id: str | None = None) -> str:
+            path = self.child(parent_id or self.root_id, name)
             try:
-                info = json.loads(info)
-            except json.JSONDecodeError:
-                value = info
-                info = None
-        if not isinstance(info, dict):
-            encoded = "".join(value.split()).strip("\"'")
-            try:
-                decoded = base64.b64decode(encoded + "=" * (-len(encoded) % 4), altchars=b"-_", validate=True)
-                info = json.loads(decoded.decode("utf-8-sig"))
-                if isinstance(info, str):
-                    info = json.loads(info)
-            except (binascii.Error, UnicodeDecodeError, json.JSONDecodeError, ValueError) as exc:
-                raise RuntimeError("GDRIVE_OAUTH_TOKEN_JSON is not valid JSON or Base64 JSON. Store credential file contents, not a path or API key; wrapped Base64 and data:application/json;base64 values are supported.") from exc
-        if not isinstance(info, dict):
-            raise RuntimeError("GDRIVE_OAUTH_TOKEN_JSON must decode to a JSON object.")
-        return info
+                self._request("POST", path, files={"action": (None, "mkdirall")})
+            except requests.HTTPError:
+                info = self.stat(path)
+                if info["path"][info["base_index"]]["type"] != "dir":
+                    raise
+            return path
 
-    def drive_client():
-        raw = os.environ.get("GDRIVE_OAUTH_TOKEN_JSON", "")
-        if not raw:
-            raise RuntimeError("Thiếu GDRIVE_OAUTH_TOKEN_JSON trong biến môi trường MoLab.")
-        info = credential_info(raw)
-        try:
-            if info.get("type") == "service_account":
-                creds = service_account.Credentials.from_service_account_info(
-                    info, scopes=["https://www.googleapis.com/auth/drive"])
-            else:
-                creds = Credentials.from_authorized_user_info(
-                    info, scopes=["https://www.googleapis.com/auth/drive"])
-        except (ValueError, KeyError, TypeError) as exc:
-            if isinstance(info.get("installed"), dict) or isinstance(info.get("web"), dict):
-                raise RuntimeError("GDRIVE_OAUTH_TOKEN_JSON contains OAuth client configuration only; authorize once and use token JSON with refresh_token, or use service-account JSON.") from exc
-            raise RuntimeError("Credentials phải là OAuth authorized-user có refresh_token hoặc service-account JSON hợp lệ.") from exc
-        if creds.expired and creds.refresh_token:
-            creds.refresh(Request())
-        return build("drive", "v3", credentials=creds, cache_discovery=False)
+        def put_json(self, parent_id: str, name: str, data) -> str:
+            path = self.child(parent_id, name)
+            body = json.dumps(data, ensure_ascii=False, indent=2).encode("utf-8")
+            self._request("PUT", path, params={"make_parents": "true"}, data=body,
+                          headers={"Content-Type": "application/json"})
+            return path
 
-    def drive_list(api, query):
-        rows = []
-        page_token = None
-        while True:
-            result = api.files().list(q=query, fields="nextPageToken,files(id,name,mimeType,size,webViewLink)",
-                pageSize=100, pageToken=page_token, supportsAllDrives=True,
-                includeItemsFromAllDrives=True).execute()
-            rows.extend(result.get("files", []))
-            page_token = result.get("nextPageToken")
-            if not page_token:
-                return rows
+        def get_json(self, parent_id: str, name: str, default=None):
+            if self.find(parent_id, name) is None:
+                return default
+            return self._request("GET", self.child(parent_id, name)).json()
 
-    def drive_find(api, parent_id, name):
-        esc = name.replace("'", "\\'")
-        rows = drive_list(api, f"'{parent_id}' in parents and name='{esc}' and trashed=false")
-        return rows[0] if rows else None
+        def upload(self, path: Path, parent_id: str, name: str | None = None) -> dict:
+            target = self.child(parent_id, name or path.name)
+            with path.open("rb") as stream:
+                node = self._request("PUT", target, params={"make_parents": "true"}, data=stream).json()
+            return node
 
-    def drive_json_get(api, parent_id, name, default=None):
-        file = drive_find(api, parent_id, name)
-        if not file:
-            return default
-        return json.loads(api.files().get_media(fileId=file["id"], supportsAllDrives=True).execute().decode("utf-8"))
+        def download(self, file_id: str, target: Path) -> Path:
+            target.parent.mkdir(parents=True, exist_ok=True)
+            with self.session.get(self._url(file_id), stream=True, timeout=(20, 300)) as response:
+                response.raise_for_status()
+                with target.open("wb") as stream:
+                    for chunk in response.iter_content(1024 * 1024):
+                        stream.write(chunk)
+            return target
 
-    def drive_json_put(api, parent_id, name, value):
-        payload = json.dumps(value, ensure_ascii=False, indent=2).encode("utf-8")
-        media = MediaInMemoryUpload(payload, mimetype="application/json", resumable=True)
-        existing = drive_find(api, parent_id, name)
-        if existing:
-            api.files().update(fileId=existing["id"], media_body=media, fields="id", supportsAllDrives=True).execute()
-        else:
-            api.files().create(body={"name": name, "parents": [parent_id]}, media_body=media, fields="id", supportsAllDrives=True).execute()
+        def share_link_reader(self, path: str) -> str:
+            node = self._request("POST", path, files={"action": (None, "update"),
+                                                      "shared": (None, "true")}).json()
+            return f"https://pixeldrain.com/d/{node['id']}"
 
-    def drive_upload(api, local_path, parent_id):
-        path = Path(local_path)
-        existing = drive_find(api, parent_id, path.name)
-        media = MediaFileUpload(str(path), resumable=True, chunksize=8 * 1024 * 1024)
-        if existing:
-            return api.files().update(fileId=existing["id"], media_body=media, fields="id,name,size", supportsAllDrives=True).execute()
-        return api.files().create(body={"name": path.name, "parents": [parent_id]}, media_body=media,
-            fields="id,name,size", supportsAllDrives=True).execute()
-
-    def drive_download(api, file_id, path):
-        path = Path(path)
-        path.parent.mkdir(parents=True, exist_ok=True)
-        request = api.files().get_media(fileId=file_id, supportsAllDrives=True)
-        with path.open("wb") as stream:
-            downloader = MediaIoBaseDownload(stream, request, chunksize=8 * 1024 * 1024)
-            done = False
-            while not done:
-                _, done = downloader.next_chunk()
-        return path
-
-    def drive_folder(api, parent_id, name):
-        existing = drive_find(api, parent_id, name)
-        if existing:
-            return existing["id"]
-        return api.files().create(body={"name": name, "mimeType": "application/vnd.google-apps.folder", "parents": [parent_id]},
-            fields="id", supportsAllDrives=True).execute()["id"]
-
-    def drive_paths(api, local_root, parent_id):
+    def upload_paths(api, local_root, parent_id):
         root = Path(local_root)
+        if not root.exists():
+            return
         for path in sorted(p for p in root.rglob("*") if p.is_file() and not p.is_symlink()):
             rel = path.relative_to(root)
             dest = parent_id
             for segment in rel.parts[:-1]:
-                dest = drive_folder(api, dest, segment)
-            drive_upload(api, path, dest)
+                dest = api.ensure_folder(segment, dest)
+            api.upload(path, dest)
 
     def now_iso():
         return datetime.now(timezone.utc).isoformat(timespec="seconds")
@@ -233,24 +188,24 @@ def _(google_api_ready, mo):
 
     def update_manifest(api, folder_id, manifest):
         manifest["updated_at"] = now_iso()
-        drive_json_put(api, folder_id, "job.json", manifest)
+        api.put_json(folder_id, "job.json", manifest)
 
     def process_job(api, folder_id, manifest, repo_dir):
         job_id = manifest["job_id"]
         worker_state.update(status="running", job_id=job_id, message="Đang tải EPUB/checkpoint")
         home = WORK_ROOT / job_id
         home.mkdir(parents=True, exist_ok=True)
-        source_path = drive_download(api, manifest["input"]["drive_file_id"], home / "source.epub")
+        source_path = api.download(manifest["input"]["pixeldrain_path"], home / "source.epub")
         actual_hash = hashlib.sha256(source_path.read_bytes()).hexdigest()
         if actual_hash != manifest["input"]["sha256"]:
-            raise ValueError("SHA-256 EPUB trên Drive không khớp manifest")
+            raise ValueError("SHA-256 EPUB on Pixeldrain does not match manifest")
 
         data_root = home / "data"
         data_root.mkdir(exist_ok=True)
-        checkpoint = drive_find(api, folder_id, "checkpoint.sqlite3")
+        checkpoint = api.find(folder_id, "checkpoint.sqlite3")
         db_path = data_root / "novel.sqlite3"
         if checkpoint:
-            drive_download(api, checkpoint["id"], db_path)
+            api.download(checkpoint["path"], db_path)
 
         os.environ["NOVEL_OUTPUT_TEXT"] = str(data_root / "output_text")
         os.environ["NOVEL_OUTPUT_AUDIO"] = str(data_root / "output_audio")
@@ -291,7 +246,7 @@ def _(google_api_ready, mo):
             if signature != observed or time.monotonic() - last_snapshot >= 90:
                 observed = signature
                 backup_database(store, data_root / "checkpoint.sqlite3")
-                drive_upload(api, data_root / "checkpoint.sqlite3", folder_id)
+                api.upload(data_root / "checkpoint.sqlite3", folder_id)
                 progress = {"total_chapters": len(current),
                     "done_chapters": sum(c["status"] == "done" for c in current),
                     "failed_chapters": sum(c["status"] == "error" for c in current),
@@ -312,7 +267,7 @@ def _(google_api_ready, mo):
 
         final_chapters = store.list()
         backup_database(store, data_root / "checkpoint.sqlite3")
-        drive_upload(api, data_root / "checkpoint.sqlite3", folder_id)
+        api.upload(data_root / "checkpoint.sqlite3", folder_id)
         book = store.book()
         try:
             from translation.core.novel_files import export_txt, export_epub
@@ -323,20 +278,18 @@ def _(google_api_ready, mo):
         except Exception:
             worker_log.exception("Book export failed")
             manifest.setdefault("errors", []).append({"stage": "export", "detail": traceback.format_exc()[-3000:]})
-        result_folder = drive_folder(api, folder_id, "result")
-        drive_paths(api, data_root / "output_text", result_folder)
-        drive_paths(api, data_root / "output_audio", result_folder)
+        result_folder = api.ensure_folder("result", folder_id)
+        upload_paths(api, data_root / "output_text", result_folder)
+        upload_paths(api, data_root / "output_audio", result_folder)
         for artifact in (data_root / "translated.txt", data_root / "translated.epub"):
             if artifact.exists():
-                drive_upload(api, artifact, result_folder)
-        if manifest["config"]["drive"].get("sharing") == "link_reader":
-            api.permissions().create(fileId=folder_id, body={"type": "anyone", "role": "reader"}, supportsAllDrives=True).execute()
-        result_link = f"https://drive.google.com/drive/folders/{folder_id}"
+                api.upload(artifact, result_folder)
+        result_link = api.share_link_reader(result_folder) if manifest["config"]["pixeldrain"].get("sharing") == "link_reader" else None
         progress = {"total_chapters": len(final_chapters), "done_chapters": sum(c["status"] == "done" for c in final_chapters),
                     "failed_chapters": sum(c["status"] == "error" for c in final_chapters),
                     "last_chapter": max((c["position"] for c in final_chapters if c["status"] == "done"), default=None)}
         manifest.update(status="COMPLETED_WITH_ERRORS" if manifest.get("errors") or progress["failed_chapters"] else "COMPLETED",
-            progress=progress, result={"drive_link": result_link, "result_folder_id": result_folder,
+            progress=progress, result={"pixeldrain_link": result_link, "result_path": result_folder,
                 "completed_at": now_iso(), "artifacts": [p.name for p in (data_root / "translated.txt", data_root / "translated.epub") if p.exists()]})
         update_manifest(api, folder_id, manifest)
         worker_state.update(status="idle", job_id=None, message=f"Hoàn tất {job_id}")
@@ -345,41 +298,36 @@ def _(google_api_ready, mo):
         while not worker_stop.is_set():
             try:
                 with worker_lock:
-                    api = drive_client()
-                    # Match the root used by app.drive.DriveStore in the Telegram bot.
-                    # Searching Drive-wide can select an unrelated folder with the same name.
-                    drive_root_id = os.environ.get("GDRIVE_ROOT_FOLDER_ID", "").strip() or "root"
-                    app_folders = drive_list(api, f"'{drive_root_id}' in parents and name='NovelReader_Auto_Run' and mimeType='application/vnd.google-apps.folder' and trashed=false")
-                    if not app_folders:
-                        raise RuntimeError("Không tìm thấy thư mục NovelReader_Auto_Run trên Drive")
-                    app_id = app_folders[0]["id"]
-                    jobs_folders = drive_list(api, f"'{app_id}' in parents and name='jobs' and mimeType='application/vnd.google-apps.folder' and trashed=false")
-                    if not jobs_folders:
-                        raise RuntimeError("Bot chưa tạo thư mục jobs trên Drive")
-                    rows = drive_list(api, f"'{jobs_folders[0]['id']}' in parents and mimeType='application/vnd.google-apps.folder' and trashed=false")
+                    api = PixeldrainStore()
+                    app_id = api.child(api.root_id, BOT_APP_FOLDER)
+                    jobs_id = api.child(app_id, "jobs")
+                    rows = api.list_children(jobs_id)
                     pending = None
                     for row in rows:
-                        manifest = drive_json_get(api, row["id"], "job.json")
+                        if row.get("type") != "dir":
+                            continue
+                        manifest = api.get_json(row["path"], "job.json")
                         if manifest and manifest.get("status") in ("QUEUED", "RUNNING"):
-                            pending = (row["id"], manifest)
+                            pending = (row["path"], manifest)
                             break
                     if pending:
                         repo_dir = ensure_novelreader()
                         process_job(api, pending[0], pending[1], repo_dir)
                     else:
-                        worker_state.update(status="idle", job_id=None, message="Đang chờ job trên Drive")
+                        worker_state.update(status="idle", job_id=None, message="Waiting for a Pixeldrain job")
             except Exception as exc:
                 worker_log.exception("Worker cycle error")
                 worker_state.update(status="error", message=f"{type(exc).__name__}: {exc}")
             worker_stop.wait(35)
 
-    if os.environ.get("GDRIVE_OAUTH_TOKEN_JSON") and not getattr(threading, "_novelreader_worker_started", False):
-        thread = threading.Thread(target=worker_loop, name="novelreader-drive-worker", daemon=True)
+
+    if os.environ.get("PIXELDRAIN_API_KEY") and not getattr(threading, "_novelreader_worker_started", False):
+        thread = threading.Thread(target=worker_loop, name="novelreader-pixeldrain-worker", daemon=True)
         thread.start()
         threading._novelreader_worker_started = True
-        worker_state.update(status="waiting", message="Worker nền đã khởi động; đang chờ job Google Drive")
-    elif not os.environ.get("GDRIVE_OAUTH_TOKEN_JSON"):
-        worker_state.update(status="needs_setup", message="Thêm biến môi trường GDRIVE_OAUTH_TOKEN_JSON vào MoLab để worker kết nối Drive")
+        worker_state.update(status="waiting", message="Worker nền đã khởi động; đang chờ job Pixeldrain")
+    elif not os.environ.get("PIXELDRAIN_API_KEY"):
+        worker_state.update(status="needs_setup", message="Set PIXELDRAIN_API_KEY in the MoLab runtime")
 
     mo.md(f"**Trạng thái worker:** `{worker_state['status']}`  \n{worker_state['message']}  \n**Job:** `{worker_state['job_id'] or '—'}`")
     return

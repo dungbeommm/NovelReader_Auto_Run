@@ -1,4 +1,3 @@
-import base64
 import json
 import unittest
 from pathlib import Path
@@ -6,7 +5,8 @@ from pathlib import Path
 import jsonschema
 
 from app.telegram_bot import DEFAULT_CONFIG, set_path
-from app.drive import DriveStore, credentials_from_json
+from app.pixeldrain import PixeldrainStore
+from unittest.mock import Mock
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -44,106 +44,36 @@ class ConfigContractTests(unittest.TestCase):
         with self.assertRaises(jsonschema.ValidationError):
             jsonschema.validate(config, self.schema)
 
-    def test_bad_drive_secret_reports_expected_credential_format(self):
-        with self.assertRaisesRegex(RuntimeError, "not valid JSON or Base64 JSON"):
-            credentials_from_json("not-json")
+    def test_pixeldrain_paths_and_result_sharing(self):
+        store = PixeldrainStore("test-key", "/me")
+        self.assertEqual(store.child("/me/jobs", "a b"), "/me/jobs/a b")
+        self.assertEqual(store._url("/me/jobs/a b"),
+                         "https://pixeldrain.com/api/filesystem/me/jobs/a%20b")
+        with self.assertRaises(ValueError):
+            store.child("/me", "../escape")
+        response = Mock()
+        response.json.return_value = {"id": "abcd1234"}
+        store.session.request = Mock(return_value=response)
+        self.assertEqual(store.share_link_reader("/me/jobs/result"),
+                         "https://pixeldrain.com/d/abcd1234")
+        self.assertEqual(store.session.request.call_args.args[:2],
+                         ("POST", "https://pixeldrain.com/api/filesystem/me/jobs/result"))
 
-    def test_unrecognized_drive_json_reports_auth_options(self):
-        with self.assertRaisesRegex(RuntimeError, "OAuth client configuration only"):
-            credentials_from_json('{"installed": {"client_id": "example"}}')
-
-    def test_drive_credentials_accept_base64_encoded_authorized_user_json(self):
-        payload = json.dumps({
-            "type": "authorized_user",
-            "client_id": "client-id",
-            "client_secret": "client-secret",
-            "refresh_token": "refresh-token",
-            "token": "access-token",
-            "token_uri": "https://oauth2.googleapis.com/token",
-        })
-        encoded = base64.b64encode(payload.encode("utf-8")).decode("ascii")
-        credentials = credentials_from_json(encoded)
-        self.assertEqual(credentials.refresh_token, "refresh-token")
-
-    def test_drive_credentials_accept_wrapped_and_line_wrapped_base64(self):
-        payload = json.dumps({
-            "type": "authorized_user",
-            "client_id": "client-id",
-            "client_secret": "client-secret",
-            "refresh_token": "refresh-token",
-            "token": "access-token",
-            "token_uri": "https://oauth2.googleapis.com/token",
-        })
-        encoded = base64.b64encode(payload.encode("utf-8")).decode("ascii")
-        wrapped = f"base64:{encoded[:32]}\n{encoded[32:]}"
-        credentials = credentials_from_json(wrapped)
-        self.assertEqual(credentials.refresh_token, "refresh-token")
-
-    def test_drive_credentials_accept_environment_assignment_and_utf8_bom(self):
-        payload = json.dumps({
-            "type": "authorized_user",
-            "client_id": "client-id",
-            "client_secret": "client-secret",
-            "refresh_token": "refresh-token",
-            "token": "access-token",
-            "token_uri": "https://oauth2.googleapis.com/token",
-        })
-        credentials = credentials_from_json("GDRIVE_OAUTH_TOKEN_JSON=\ufeff" + payload)
-        self.assertEqual(credentials.refresh_token, "refresh-token")
-
-    def test_drive_credentials_accept_shell_quoted_json(self):
-        payload = json.dumps({
-            "type": "authorized_user",
-            "client_id": "client-id",
-            "client_secret": "client-secret",
-            "refresh_token": "refresh-token",
-            "token": "access-token",
-            "token_uri": "https://oauth2.googleapis.com/token",
-        })
-        credentials = credentials_from_json(f"'{payload}'")
-        self.assertEqual(credentials.refresh_token, "refresh-token")
-
-    def test_drive_credentials_accept_markdown_fenced_json(self):
-        payload = json.dumps({
-            "type": "authorized_user",
-            "client_id": "client-id",
-            "client_secret": "client-secret",
-            "refresh_token": "refresh-token",
-            "token": "access-token",
-            "token_uri": "https://oauth2.googleapis.com/token",
-        })
-        credentials = credentials_from_json(f"```json\n{payload}\n```")
-        self.assertEqual(credentials.refresh_token, "refresh-token")
-
-    def test_drive_listing_follows_all_pages(self):
-        class Request:
-            def __init__(self, result):
-                self.result = result
-
-            def execute(self):
-                return self.result
-
-        class Files:
-            def __init__(self):
-                self.tokens = []
-
-            def list(self, **kwargs):
-                self.tokens.append(kwargs.get("pageToken"))
-                if kwargs.get("pageToken") is None:
-                    return Request({"files": [{"id": "one"}], "nextPageToken": "page-2"})
-                return Request({"files": [{"id": "two"}]})
-
-        class Api:
-            def __init__(self):
-                self.files_api = Files()
-
-            def files(self):
-                return self.files_api
-
-        drive = DriveStore.__new__(DriveStore)
-        drive.api = Api()
-        self.assertEqual([x["id"] for x in drive._list("trashed=false")], ["one", "two"])
-        self.assertEqual(drive.api.files_api.tokens, [None, "page-2"])
+    def test_pixeldrain_manifest_round_trip_requests(self):
+        store = PixeldrainStore("test-key")
+        response = Mock()
+        response.json.side_effect = [
+            {"path": [{"type": "dir"}], "base_index": 0,
+             "children": [{"type": "file", "name": "job.json"}]},
+            {"job_id": "example", "status": "QUEUED"},
+        ]
+        store.session.request = Mock(return_value=response)
+        manifest = {"job_id": "example", "status": "QUEUED"}
+        store.put_json("/me/jobs/example", "job.json", manifest)
+        self.assertEqual(store.get_json("/me/jobs/example", "job.json"), manifest)
+        method, url = store.session.request.call_args_list[0].args[:2]
+        self.assertEqual((method, url),
+                         ("PUT", "https://pixeldrain.com/api/filesystem/me/jobs/example/job.json"))
 
 
 if __name__ == "__main__":

@@ -1,3 +1,7 @@
+# Historical plan (Google Drive version)
+
+> Archived design. The running code now uses Pixeldrain Filesystem. Follow README.md for current setup; the Drive instructions below are obsolete.
+
 # Kế hoạch triển khai NovelReader Auto Run
 
 Ngày lập: 22/10/2026. Trạng thái: ĐANG TRIỂN KHAI THEO YÊU CẦU MỚI NHẤT. Người dùng đã yêu cầu bắt đầu viết code theo plan. Bản mã đầu tiên gồm bot Telegram, tích hợp Drive, schema, Actions và notebook worker đã được thêm vào workspace; chưa chạy kiểm thử hoặc triển khai lên GitHub/MoLab.

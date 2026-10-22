@@ -14,7 +14,7 @@ from typing import Any
 
 import requests
 
-from app.drive import DriveStore
+from app.pixeldrain import PixeldrainStore
 
 log = logging.getLogger("novelreader.bot")
 DEFAULT_CONFIG: dict[str, Any] = {
@@ -29,7 +29,7 @@ DEFAULT_CONFIG: dict[str, Any] = {
               "vieneu_top_p": 0.95, "vieneu_batch_size": 8},
     "merge": {"enabled": True, "chapters_per_file": 50},
     "export": {"txt": True, "epub": True, "chapter_audio": True, "keep_chapter_audio": True},
-    "drive": {"folder_id": "", "sharing": "private"},
+    "pixeldrain": {"sharing": "link_reader"},
 }
 MAX_TELEGRAM_DOWNLOAD = 20 * 1024 * 1024
 
@@ -80,7 +80,7 @@ def pretty_config(config: dict[str, Any]) -> str:
         f"Thông số giọng đọc: noise={a['noise_scale']}, noise-w={a['noise_w_scale']}, VieNeu temperature={a['vieneu_temperature']}, top-p={a['vieneu_top_p']}, batch={a['vieneu_batch_size']}",
         f"Gộp audio: {'bật' if m['enabled'] else 'tắt'}, {m['chapters_per_file']} chương/file",
         f"Xuất: TXT={e['txt']}, EPUB={e['epub']}, audio chương={e['chapter_audio']}, giữ file lẻ={e['keep_chapter_audio']}",
-        f"Drive folder: {config['drive']['folder_id'] or '(thư mục gốc cấu hình ở Actions)'} | chia sẻ={config['drive']['sharing']}",
+        f"Pixeldrain: chia sẻ kết quả={config['pixeldrain']['sharing']}",
         "",
         "Sửa trường: /set <nhóm.trường> <giá trị> — ví dụ /set audio.voice ngochuyennew",
         "Dùng /config để xem lại cấu hình. Gửi EPUB rồi bấm Bắt đầu để chạy.",
@@ -89,17 +89,17 @@ def pretty_config(config: dict[str, Any]) -> str:
 
 
 class TelegramBot:
-    def __init__(self, token: str, allowed_users: set[str], drive: DriveStore) -> None:
+    def __init__(self, token: str, allowed_users: set[str], storage: PixeldrainStore) -> None:
         self.token = token
         self.allowed = allowed_users
-        self.drive = drive
+        self.storage = storage
         self.http = requests.Session()
         self.base = f"https://api.telegram.org/bot{token}"
         self.files_base = f"https://api.telegram.org/file/bot{token}"
-        self.app_folder = drive.ensure_folder("NovelReader_Auto_Run")
-        self.users_folder = drive.ensure_folder("users", self.app_folder)
-        self.jobs_folder = drive.ensure_folder("jobs", self.app_folder)
-        self.shared_state = drive.get_json(self.app_folder, "bot_state.json", {"offset": 0, "users": {}})
+        self.app_folder = storage.ensure_folder("NovelReader_Auto_Run")
+        self.users_folder = storage.ensure_folder("users", self.app_folder)
+        self.jobs_folder = storage.ensure_folder("jobs", self.app_folder)
+        self.shared_state = storage.get_json(self.app_folder, "bot_state.json", {"offset": 0, "users": {}})
 
     def call(self, method: str, **payload: Any) -> Any:
         response = self.http.post(f"{self.base}/{method}", json=payload, timeout=60)
@@ -116,7 +116,7 @@ class TelegramBot:
         self.call("sendMessage", **payload)
 
     def _user_folder(self, user_id: str) -> str:
-        return self.drive.ensure_folder(user_id, self.users_folder)
+        return self.storage.ensure_folder(user_id, self.users_folder)
 
     def _user(self, user_id: str) -> dict[str, Any]:
         users = self.shared_state.setdefault("users", {})
@@ -126,11 +126,11 @@ class TelegramBot:
         return users[user_id]
 
     def save_state(self) -> None:
-        self.drive.put_json(self.app_folder, "bot_state.json", self.shared_state)
+        self.storage.put_json(self.app_folder, "bot_state.json", self.shared_state)
 
     def _job(self, job_id: str) -> tuple[str, dict[str, Any] | None]:
-        folder = self.drive.ensure_folder(job_id, self.jobs_folder)
-        return folder, self.drive.get_json(folder, "job.json")
+        folder = self.storage.ensure_folder(job_id, self.jobs_folder)
+        return folder, self.storage.get_json(folder, "job.json")
 
     def _handle_document(self, message: dict[str, Any], user_id: str) -> None:
         doc = message.get("document", {})
@@ -148,27 +148,26 @@ class TelegramBot:
         if len(data) > MAX_TELEGRAM_DOWNLOAD:
             raise ValueError("Downloaded file exceeds Telegram's 20 MB limit")
         job_id = str(uuid.uuid4())
-        folder = self.drive.ensure_folder(job_id, self.jobs_folder)
+        folder = self.storage.ensure_folder(job_id, self.jobs_folder)
         temp = Path("/tmp") / f"{job_id}.epub"
         temp.write_bytes(data)
         try:
-            uploaded = self.drive.upload(temp, folder, "source.epub")
+            uploaded = self.storage.upload(temp, folder, "source.epub")
         finally:
             temp.unlink(missing_ok=True)
         user = self._user(user_id)
         config = deepcopy(user.get("config") or DEFAULT_CONFIG)
-        config["drive"]["folder_id"] = config["drive"].get("folder_id") or self.drive.root_id
         digest = hashlib.sha256(data).hexdigest()
-        draft = {"job_id": job_id, "folder_id": folder, "input": {"drive_file_id": uploaded["id"], "name": name,
+        draft = {"job_id": job_id, "folder_id": folder, "input": {"pixeldrain_path": uploaded["path"], "name": name,
                  "sha256": digest, "size": len(data)}, "config": config, "chat_id": message["chat"]["id"]}
         user["draft"] = draft
-        self.drive.put_json(folder, "job.json", {"schema_version": 1, "job_id": job_id, "owner_id": user_id,
+        self.storage.put_json(folder, "job.json", {"schema_version": 1, "job_id": job_id, "owner_id": user_id,
             "created_at": utcnow(), "updated_at": utcnow(), "status": "CONFIGURING", "input": draft["input"],
             "config": config, "progress": {"total_chapters": 0, "done_chapters": 0, "failed_chapters": 0, "last_chapter": None},
             "errors": [], "result": None})
         self.save_state()
         first_time = not user.get("config")
-        message_text = f"Đã lưu EPUB {name} lên Google Drive ({len(data):,} byte; SHA256 {digest[:16]}…).\n\n"
+        message_text = f"Đã lưu EPUB {name} lên Pixeldrain ({len(data):,} byte; SHA256 {digest[:16]}…).\n\n"
         if first_time:
             message_text += "Đây là lần đầu: xem toàn bộ cấu hình mặc định bên dưới. Chỉnh bằng /set <nhóm.trường> <giá trị>; sau khi lưu, lần sau bot dùng preset này.\n\n"
         else:
@@ -186,7 +185,7 @@ class TelegramBot:
         response = self.http.post(f"https://api.github.com/repos/{repo}/dispatches",
             headers={"Accept": "application/vnd.github+json", "Authorization": f"Bearer {token}",
                      "X-GitHub-Api-Version": "2022-11-28"},
-            json={"event_type": "novelreader_job", "client_payload": {"job_id": job_id, "drive_folder_id": folder_id}}, timeout=30)
+            json={"event_type": "novelreader_job", "client_payload": {"job_id": job_id, "pixeldrain_job_path": folder_id}}, timeout=30)
         if response.status_code not in (200, 204):
             raise RuntimeError(f"GitHub dispatch HTTP {response.status_code}: {response.text[:300]}")
 
@@ -203,12 +202,12 @@ class TelegramBot:
         if data.startswith("cancel:"):
             user["draft"] = None
             self.save_state()
-            self.send(chat_id, "Đã hủy bản nháp. File EPUB vẫn được giữ trong Drive.")
+            self.send(chat_id, "Đã hủy bản nháp. File EPUB vẫn được giữ trong Pixeldrain.")
             return
         if data.startswith("start:"):
             folder, manifest = self._job(draft["job_id"])
             if not manifest:
-                raise RuntimeError("Không tìm thấy manifest job trên Drive")
+                raise RuntimeError("Không tìm thấy manifest job trên Pixeldrain")
             if manifest["status"] != "CONFIGURING":
                 self.send(chat_id, "Job đã được gửi chạy hoặc đang chạy; không tạo lượt trùng.")
                 return
@@ -216,19 +215,19 @@ class TelegramBot:
             schema_path = Path(__file__).resolve().parents[1] / "schemas" / "config.schema.json"
             jsonschema.validate(draft["config"], json.loads(schema_path.read_text(encoding="utf-8")))
             manifest.update(status="QUEUED", config=draft["config"], updated_at=utcnow())
-            self.drive.put_json(folder, "job.json", manifest)
-            self.drive.put_json(self._user_folder(user_id), "config.json", draft["config"])
+            self.storage.put_json(folder, "job.json", manifest)
+            self.storage.put_json(self._user_folder(user_id), "config.json", draft["config"])
             user["config"] = draft["config"]
             user["last_job"] = draft["job_id"]
             self.save_state()
             self._dispatch(draft["job_id"], folder)
-            self.send(chat_id, f"Đã xếp job {draft['job_id']} vào hàng đợi. Bot sẽ gửi log lỗi và link Google Drive khi hoàn tất.")
+            self.send(chat_id, f"Đã xếp job {draft['job_id']} vào hàng đợi. Bot sẽ gửi log lỗi và link Pixeldrain khi hoàn tất.")
             user["draft"] = None
             self.save_state()
 
     def handle(self, update: dict[str, Any]) -> None:
         message = update.get("message")
-        user_obj = (message or update.get("callback_query", {}).get("from", {})).get("from", {})
+        user_obj = message.get("from", {}) if message else update.get("callback_query", {}).get("from", {})
         user_id = str(user_obj.get("id", ""))
         if not user_id or (self.allowed and user_id not in self.allowed):
             if message:
@@ -248,7 +247,7 @@ class TelegramBot:
             self.send(chat_id, "Gửi EPUB tiếng Trung để tạo job. Lệnh: /config, /set nhóm.trường giá_trị, /status, /result, /cancel.")
         elif text.startswith("/config"):
             user = self._user(user_id)
-            user["config"] = user.get("config") or self.drive.get_json(user["folder_id"], "config.json") or deepcopy(DEFAULT_CONFIG)
+            user["config"] = user.get("config") or self.storage.get_json(user["folder_id"], "config.json") or deepcopy(DEFAULT_CONFIG)
             self.send(chat_id, pretty_config(user["config"]))
         elif text.startswith("/set "):
             parts = text.split(maxsplit=2)
@@ -256,7 +255,7 @@ class TelegramBot:
                 self.send(chat_id, "Cú pháp: /set nhóm.trường giá_trị (vd: /set audio.speed 1.1)")
                 return
             user = self._user(user_id)
-            config = deepcopy(user.get("config") or (user.get("draft") or {}).get("config") or self.drive.get_json(user["folder_id"], "config.json") or DEFAULT_CONFIG)
+            config = deepcopy(user.get("config") or (user.get("draft") or {}).get("config") or self.storage.get_json(user["folder_id"], "config.json") or DEFAULT_CONFIG)
             try:
                 set_path(config, parts[1], parts[2])
                 user["config"] = config
@@ -264,8 +263,8 @@ class TelegramBot:
                     user["draft"]["config"] = config
                     folder, manifest = self._job(user["draft"]["job_id"])
                     manifest["config"] = config
-                    self.drive.put_json(folder, "job.json", manifest)
-                self.drive.put_json(user["folder_id"], "config.json", config)
+                    self.storage.put_json(folder, "job.json", manifest)
+                self.storage.put_json(user["folder_id"], "config.json", config)
                 self.save_state()
                 self.send(chat_id, "Đã cập nhật preset.\n\n" + pretty_config(config))
             except ValueError as exc:
@@ -287,7 +286,7 @@ class TelegramBot:
             job_id = user.get("last_job")
             folder, manifest = self._job(job_id) if job_id else ("", None)
             result = manifest.get("result") if manifest else None
-            self.send(chat_id, (result or {}).get("drive_link", "Chưa có kết quả Drive cho job gần nhất."))
+            self.send(chat_id, (result or {}).get("pixeldrain_link") or "Chưa có link kết quả Pixeldrain cho job gần nhất.")
         elif text.startswith("/cancel"):
             user = self._user(user_id)
             user["draft"] = None
@@ -325,12 +324,12 @@ class TelegramBot:
         self.save_state()
 
     def notify_job_updates(self) -> None:
-        """Deliver chapter errors and finished Drive links persisted by the notebook worker."""
-        for entry in self.drive.list_children(self.jobs_folder):
-            if entry.get("mimeType") != "application/vnd.google-apps.folder":
+        """Deliver chapter errors and finished Pixeldrain links persisted by the notebook worker."""
+        for entry in self.storage.list_children(self.jobs_folder):
+            if entry.get("type") != "dir":
                 continue
-            folder = entry["id"]
-            manifest = self.drive.get_json(folder, "job.json")
+            folder = entry["path"]
+            manifest = self.storage.get_json(folder, "job.json")
             if not manifest:
                 continue
             chat_id = manifest.get("owner_id")
@@ -343,14 +342,14 @@ class TelegramBot:
                 snippet = str(error.get("detail", ""))[-2200:]
                 self.send(int(chat_id), f"Lỗi job {manifest['job_id']} | chương {error.get('chapter', '?')} | {error.get('stage', 'worker')}\n{snippet}")
                 notified["errors"] = notified.get("errors", 0) + 1
-                self.drive.put_json(folder, "job.json", manifest)
+                self.storage.put_json(folder, "job.json", manifest)
             if manifest.get("status") in ("COMPLETED", "COMPLETED_WITH_ERRORS") and not notified.get("result"):
                 result = manifest.get("result") or {}
-                link = result.get("drive_link", "(chưa có link)")
+                link = result.get("pixeldrain_link") or "(kết quả riêng tư, chưa có link)"
                 counts = manifest.get("progress", {})
-                self.send(int(chat_id), f"Job {manifest['job_id']} hoàn tất: {manifest['status']}\nChương {counts.get('done_chapters', 0)}/{counts.get('total_chapters', 0)}; lỗi {counts.get('failed_chapters', 0)}\nGoogle Drive: {link}")
+                self.send(int(chat_id), f"Job {manifest['job_id']} hoàn tất: {manifest['status']}\nChương {counts.get('done_chapters', 0)}/{counts.get('total_chapters', 0)}; lỗi {counts.get('failed_chapters', 0)}\nPixeldrain: {link}")
                 notified["result"] = True
-                self.drive.put_json(folder, "job.json", manifest)
+                self.storage.put_json(folder, "job.json", manifest)
 
 
 def main() -> None:
@@ -362,7 +361,7 @@ def main() -> None:
     if not token:
         raise SystemExit("TELEGRAM_BOT_TOKEN is required")
     allowed = {x.strip() for x in os.environ.get("ALLOWED_TELEGRAM_USER_IDS", "").split(",") if x.strip()}
-    TelegramBot(token, allowed, DriveStore()).poll(max(30, min(args.poll_seconds, 230)))
+    TelegramBot(token, allowed, PixeldrainStore()).poll(max(30, min(args.poll_seconds, 230)))
 
 
 if __name__ == "__main__":

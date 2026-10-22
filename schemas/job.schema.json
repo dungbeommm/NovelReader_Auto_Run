@@ -10,7 +10,7 @@
     "owner_id": {"type": "string"},
     "created_at": {"type": "string", "format": "date-time"},
     "status": {"enum": ["CONFIGURING", "QUEUED", "RUNNING", "PAUSED", "UPLOADING", "COMPLETED", "COMPLETED_WITH_ERRORS", "FAILED"]},
-    "input": {"type": "object", "required": ["drive_file_id", "name", "sha256", "size"], "properties": {"drive_file_id": {"type": "string"}, "name": {"type": "string"}, "sha256": {"type": "string"}, "size": {"type": "integer"}}, "additionalProperties": false},
+    "input": {"type": "object", "required": ["pixeldrain_path", "name", "sha256", "size"], "properties": {"pixeldrain_path": {"type": "string"}, "name": {"type": "string"}, "sha256": {"type": "string"}, "size": {"type": "integer"}}, "additionalProperties": false},
     "config": {"type": "object"},
     "progress": {"type": "object", "properties": {"total_chapters": {"type": "integer"}, "done_chapters": {"type": "integer"}, "failed_chapters": {"type": "integer"}, "last_chapter": {"type": ["integer", "null"]}}, "additionalProperties": false},
     "result": {"type": ["object", "null"]},

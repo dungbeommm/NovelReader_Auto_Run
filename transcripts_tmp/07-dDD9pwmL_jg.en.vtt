@@ -1,0 +1,1640 @@
+WEBVTT
+Kind: captions
+Language: en
+
+00:00:02.630 --> 00:00:06.710 align:start position:0%
+ 
+[Music]
+
+00:00:06.710 --> 00:00:06.720 align:start position:0%
+ 
+ 
+
+00:00:06.720 --> 00:00:08.070 align:start position:0%
+ 
+hey<00:00:06.960><c> how's</c><00:00:07.200><c> going</c><00:00:07.440><c> guys</c>
+
+00:00:08.070 --> 00:00:08.080 align:start position:0%
+hey how's going guys
+ 
+
+00:00:08.080 --> 00:00:10.150 align:start position:0%
+hey how's going guys
+welcome<00:00:08.400><c> to</c><00:00:08.480><c> another</c><00:00:08.880><c> google</c><00:00:09.280><c> drive</c><00:00:09.599><c> api</c><00:00:10.080><c> in</c>
+
+00:00:10.150 --> 00:00:10.160 align:start position:0%
+welcome to another google drive api in
+ 
+
+00:00:10.160 --> 00:00:11.270 align:start position:0%
+welcome to another google drive api in
+python<00:00:10.719><c> tutorial</c>
+
+00:00:11.270 --> 00:00:11.280 align:start position:0%
+python tutorial
+ 
+
+00:00:11.280 --> 00:00:13.589 align:start position:0%
+python tutorial
+my<00:00:11.440><c> name</c><00:00:11.679><c> is</c><00:00:11.840><c> jay</c><00:00:12.559><c> in</c><00:00:12.719><c> this</c><00:00:12.880><c> video</c><00:00:13.280><c> i'm</c><00:00:13.440><c> going</c>
+
+00:00:13.589 --> 00:00:13.599 align:start position:0%
+my name is jay in this video i'm going
+ 
+
+00:00:13.599 --> 00:00:14.870 align:start position:0%
+my name is jay in this video i'm going
+to<00:00:13.759><c> show</c><00:00:13.920><c> you</c><00:00:14.080><c> how</c><00:00:14.320><c> to</c><00:00:14.480><c> use</c>
+
+00:00:14.870 --> 00:00:14.880 align:start position:0%
+to show you how to use
+ 
+
+00:00:14.880 --> 00:00:17.590 align:start position:0%
+to show you how to use
+google<00:00:15.200><c> drive</c><00:00:15.519><c> api</c><00:00:16.080><c> to</c><00:00:16.320><c> convert</c><00:00:16.880><c> excel</c><00:00:17.199><c> files</c>
+
+00:00:17.590 --> 00:00:17.600 align:start position:0%
+google drive api to convert excel files
+ 
+
+00:00:17.600 --> 00:00:19.429 align:start position:0%
+google drive api to convert excel files
+to<00:00:17.840><c> google</c><00:00:18.240><c> sheets</c>
+
+00:00:19.429 --> 00:00:19.439 align:start position:0%
+to google sheets
+ 
+
+00:00:19.439 --> 00:00:22.710 align:start position:0%
+to google sheets
+so<00:00:19.680><c> here</c><00:00:19.920><c> are</c><00:00:20.160><c> two</c><00:00:20.320><c> excel</c><00:00:20.720><c> files</c><00:00:21.680><c> an</c><00:00:21.840><c> hxl</c><00:00:22.400><c> file</c>
+
+00:00:22.710 --> 00:00:22.720 align:start position:0%
+so here are two excel files an hxl file
+ 
+
+00:00:22.720 --> 00:00:24.310 align:start position:0%
+so here are two excel files an hxl file
+has<00:00:22.960><c> different</c><00:00:23.279><c> extension</c><00:00:23.760><c> links</c><00:00:24.000><c> so</c><00:00:24.240><c> for</c>
+
+00:00:24.310 --> 00:00:24.320 align:start position:0%
+has different extension links so for
+ 
+
+00:00:24.320 --> 00:00:25.109 align:start position:0%
+has different extension links so for
+example
+
+00:00:25.109 --> 00:00:25.119 align:start position:0%
+example
+ 
+
+00:00:25.119 --> 00:00:28.070 align:start position:0%
+example
+this<00:00:25.359><c> one</c><00:00:25.599><c> belongs</c><00:00:26.080><c> to</c><00:00:26.400><c> excel</c><00:00:26.880><c> 2003</c><00:00:27.920><c> or</c>
+
+00:00:28.070 --> 00:00:28.080 align:start position:0%
+this one belongs to excel 2003 or
+ 
+
+00:00:28.080 --> 00:00:29.189 align:start position:0%
+this one belongs to excel 2003 or
+earlier<00:00:28.400><c> version</c>
+
+00:00:29.189 --> 00:00:29.199 align:start position:0%
+earlier version
+ 
+
+00:00:29.199 --> 00:00:32.549 align:start position:0%
+earlier version
+so<00:00:29.439><c> the</c><00:00:29.599><c> extension</c><00:00:30.080><c> name</c><00:00:30.320><c> is</c><00:00:30.880><c> xls</c>
+
+00:00:32.549 --> 00:00:32.559 align:start position:0%
+so the extension name is xls
+ 
+
+00:00:32.559 --> 00:00:36.150 align:start position:0%
+so the extension name is xls
+and<00:00:32.800><c> first</c><00:00:33.120><c> these</c><00:00:33.440><c> two</c><00:00:34.480><c> this</c><00:00:34.719><c> one</c><00:00:34.960><c> is</c><00:00:35.200><c> the</c><00:00:35.360><c> more</c>
+
+00:00:36.150 --> 00:00:36.160 align:start position:0%
+and first these two this one is the more
+ 
+
+00:00:36.160 --> 00:00:38.869 align:start position:0%
+and first these two this one is the more
+modern<00:00:36.719><c> excel</c><00:00:37.280><c> version</c><00:00:38.079><c> so</c><00:00:38.320><c> the</c><00:00:38.480><c> extension</c>
+
+00:00:38.869 --> 00:00:38.879 align:start position:0%
+modern excel version so the extension
+ 
+
+00:00:38.879 --> 00:00:39.709 align:start position:0%
+modern excel version so the extension
+name<00:00:39.200><c> is</c>
+
+00:00:39.709 --> 00:00:39.719 align:start position:0%
+name is
+ 
+
+00:00:39.719 --> 00:00:43.190 align:start position:0%
+name is
+xlsx<00:00:41.280><c> and</c><00:00:41.440><c> this</c><00:00:41.600><c> one</c><00:00:41.760><c> is</c><00:00:42.000><c> macro</c><00:00:42.320><c> enabled</c><00:00:42.719><c> file</c>
+
+00:00:43.190 --> 00:00:43.200 align:start position:0%
+xlsx and this one is macro enabled file
+ 
+
+00:00:43.200 --> 00:00:46.229 align:start position:0%
+xlsx and this one is macro enabled file
+so<00:00:43.360><c> the</c><00:00:43.520><c> extension</c><00:00:43.920><c> name</c><00:00:44.160><c> is</c><00:00:44.640><c> excel</c><00:00:45.200><c> sm</c>
+
+00:00:46.229 --> 00:00:46.239 align:start position:0%
+so the extension name is excel sm
+ 
+
+00:00:46.239 --> 00:00:48.470 align:start position:0%
+so the extension name is excel sm
+i<00:00:46.399><c> want</c><00:00:46.559><c> to</c><00:00:46.719><c> convert</c><00:00:47.039><c> this</c><00:00:47.280><c> to</c><00:00:47.440><c> excel</c><00:00:47.840><c> files</c><00:00:48.239><c> to</c>
+
+00:00:48.470 --> 00:00:48.480 align:start position:0%
+i want to convert this to excel files to
+ 
+
+00:00:48.480 --> 00:00:50.229 align:start position:0%
+i want to convert this to excel files to
+my<00:00:49.120><c> google</c><00:00:49.520><c> drive</c>
+
+00:00:50.229 --> 00:00:50.239 align:start position:0%
+my google drive
+ 
+
+00:00:50.239 --> 00:00:52.709 align:start position:0%
+my google drive
+and<00:00:50.480><c> translate</c><00:00:50.960><c> them</c><00:00:51.360><c> to</c><00:00:52.000><c> google</c><00:00:52.320><c> sheets</c>
+
+00:00:52.709 --> 00:00:52.719 align:start position:0%
+and translate them to google sheets
+ 
+
+00:00:52.719 --> 00:00:53.990 align:start position:0%
+and translate them to google sheets
+format
+
+00:00:53.990 --> 00:00:54.000 align:start position:0%
+format
+ 
+
+00:00:54.000 --> 00:00:57.029 align:start position:0%
+format
+now<00:00:54.160><c> let</c><00:00:54.320><c> me</c><00:00:54.480><c> go</c><00:00:54.640><c> into</c><00:00:55.120><c> my</c><00:00:55.600><c> python</c><00:00:56.079><c> script</c>
+
+00:00:57.029 --> 00:00:57.039 align:start position:0%
+now let me go into my python script
+ 
+
+00:00:57.039 --> 00:00:59.349 align:start position:0%
+now let me go into my python script
+and<00:00:57.199><c> here's</c><00:00:57.520><c> the</c><00:00:57.760><c> code</c><00:00:58.160><c> to</c><00:00:58.399><c> create</c><00:00:58.719><c> the</c><00:00:58.960><c> google</c>
+
+00:00:59.349 --> 00:00:59.359 align:start position:0%
+and here's the code to create the google
+ 
+
+00:00:59.359 --> 00:01:00.229 align:start position:0%
+and here's the code to create the google
+drive<00:00:59.680><c> api</c>
+
+00:01:00.229 --> 00:01:00.239 align:start position:0%
+drive api
+ 
+
+00:01:00.239 --> 00:01:02.869 align:start position:0%
+drive api
+service<00:01:00.719><c> instance</c><00:01:01.840><c> let</c><00:01:02.000><c> me</c><00:01:02.160><c> go</c><00:01:02.320><c> back</c><00:01:02.559><c> to</c><00:01:02.719><c> the</c>
+
+00:01:02.869 --> 00:01:02.879 align:start position:0%
+service instance let me go back to the
+ 
+
+00:01:02.879 --> 00:01:03.830 align:start position:0%
+service instance let me go back to the
+import<00:01:03.280><c> statement</c>
+
+00:01:03.830 --> 00:01:03.840 align:start position:0%
+import statement
+ 
+
+00:01:03.840 --> 00:01:05.350 align:start position:0%
+import statement
+i'm<00:01:04.000><c> going</c><00:01:04.239><c> to</c><00:01:04.400><c> import</c><00:01:04.799><c> a</c><00:01:04.879><c> couple</c><00:01:05.119><c> more</c>
+
+00:01:05.350 --> 00:01:05.360 align:start position:0%
+i'm going to import a couple more
+ 
+
+00:01:05.360 --> 00:01:07.750 align:start position:0%
+i'm going to import a couple more
+libraries<00:01:06.320><c> i'm</c><00:01:06.479><c> going</c><00:01:06.720><c> to</c><00:01:06.880><c> import</c><00:01:07.200><c> the</c><00:01:07.360><c> os</c>
+
+00:01:07.750 --> 00:01:07.760 align:start position:0%
+libraries i'm going to import the os
+ 
+
+00:01:07.760 --> 00:01:09.510 align:start position:0%
+libraries i'm going to import the os
+module
+
+00:01:09.510 --> 00:01:09.520 align:start position:0%
+module
+ 
+
+00:01:09.520 --> 00:01:14.789 align:start position:0%
+module
+from<00:01:09.920><c> google</c><00:01:11.040><c> api</c><00:01:12.760><c> client.http</c><00:01:13.760><c> library</c>
+
+00:01:14.789 --> 00:01:14.799 align:start position:0%
+from google api client.http library
+ 
+
+00:01:14.799 --> 00:01:17.990 align:start position:0%
+from google api client.http library
+i<00:01:14.960><c> want</c><00:01:15.119><c> to</c><00:01:15.280><c> import</c><00:01:15.600><c> a</c><00:01:15.920><c> media</c><00:01:17.119><c> file</c><00:01:17.600><c> upload</c>
+
+00:01:17.990 --> 00:01:18.000 align:start position:0%
+i want to import a media file upload
+ 
+
+00:01:18.000 --> 00:01:21.910 align:start position:0%
+i want to import a media file upload
+class
+
+00:01:21.910 --> 00:01:21.920 align:start position:0%
+ 
+ 
+
+00:01:21.920 --> 00:01:23.670 align:start position:0%
+ 
+next<00:01:22.240><c> i</c><00:01:22.320><c> want</c><00:01:22.400><c> to</c><00:01:22.640><c> create</c><00:01:22.799><c> a</c><00:01:22.960><c> function</c><00:01:23.439><c> to</c>
+
+00:01:23.670 --> 00:01:23.680 align:start position:0%
+next i want to create a function to
+ 
+
+00:01:23.680 --> 00:01:25.270 align:start position:0%
+next i want to create a function to
+perform<00:01:24.240><c> the</c>
+
+00:01:25.270 --> 00:01:25.280 align:start position:0%
+perform the
+ 
+
+00:01:25.280 --> 00:01:27.429 align:start position:0%
+perform the
+excel<00:01:25.680><c> spreadsheet</c><00:01:26.320><c> to</c><00:01:26.560><c> google</c><00:01:26.880><c> sheets</c>
+
+00:01:27.429 --> 00:01:27.439 align:start position:0%
+excel spreadsheet to google sheets
+ 
+
+00:01:27.439 --> 00:01:29.429 align:start position:0%
+excel spreadsheet to google sheets
+conversion
+
+00:01:29.429 --> 00:01:29.439 align:start position:0%
+conversion
+ 
+
+00:01:29.439 --> 00:01:32.149 align:start position:0%
+conversion
+so<00:01:29.520><c> i'll</c><00:01:29.680><c> name</c><00:01:29.840><c> this</c><00:01:30.079><c> function</c><00:01:30.799><c> convert</c><00:01:31.520><c> excel</c>
+
+00:01:32.149 --> 00:01:32.159 align:start position:0%
+so i'll name this function convert excel
+ 
+
+00:01:32.159 --> 00:01:35.590 align:start position:0%
+so i'll name this function convert excel
+file
+
+00:01:35.590 --> 00:01:35.600 align:start position:0%
+ 
+ 
+
+00:01:35.600 --> 00:01:37.749 align:start position:0%
+ 
+i'm<00:01:35.920><c> going</c><00:01:36.159><c> to</c><00:01:36.320><c> have</c><00:01:36.560><c> two</c><00:01:36.720><c> parameters</c><00:01:37.600><c> the</c>
+
+00:01:37.749 --> 00:01:37.759 align:start position:0%
+i'm going to have two parameters the
+ 
+
+00:01:37.759 --> 00:01:39.670 align:start position:0%
+i'm going to have two parameters the
+first<00:01:38.000><c> parameter</c><00:01:38.400><c> is</c><00:01:38.560><c> the</c><00:01:38.720><c> file</c><00:01:39.040><c> path</c>
+
+00:01:39.670 --> 00:01:39.680 align:start position:0%
+first parameter is the file path
+ 
+
+00:01:39.680 --> 00:01:42.230 align:start position:0%
+first parameter is the file path
+ensuring<00:01:40.079><c> a</c><00:01:40.159><c> string</c><00:01:40.479><c> data</c><00:01:40.799><c> type</c><00:01:42.000><c> in</c><00:01:42.079><c> the</c>
+
+00:01:42.230 --> 00:01:42.240 align:start position:0%
+ensuring a string data type in the
+ 
+
+00:01:42.240 --> 00:01:44.950 align:start position:0%
+ensuring a string data type in the
+second<00:01:42.720><c> parameter</c><00:01:43.280><c> is</c><00:01:43.439><c> the</c><00:01:43.759><c> folder</c><00:01:44.159><c> ids</c>
+
+00:01:44.950 --> 00:01:44.960 align:start position:0%
+second parameter is the folder ids
+ 
+
+00:01:44.960 --> 00:01:48.230 align:start position:0%
+second parameter is the folder ids
+in<00:01:45.119><c> case</c><00:01:45.439><c> form</c><00:01:45.840><c> to</c><00:01:46.640><c> upload</c><00:01:47.040><c> the</c><00:01:47.200><c> files</c><00:01:47.600><c> to</c><00:01:47.920><c> a</c>
+
+00:01:48.230 --> 00:01:48.240 align:start position:0%
+in case form to upload the files to a
+ 
+
+00:01:48.240 --> 00:01:49.510 align:start position:0%
+in case form to upload the files to a
+google<00:01:48.560><c> drive</c><00:01:48.880><c> folder</c>
+
+00:01:49.510 --> 00:01:49.520 align:start position:0%
+google drive folder
+ 
+
+00:01:49.520 --> 00:01:52.149 align:start position:0%
+google drive folder
+they<00:01:49.680><c> can</c><00:01:49.840><c> provide</c><00:01:50.240><c> the</c><00:01:50.399><c> folder</c><00:01:50.799><c> id</c><00:01:51.920><c> and</c><00:01:52.079><c> the</c>
+
+00:01:52.149 --> 00:01:52.159 align:start position:0%
+they can provide the folder id and the
+ 
+
+00:01:52.159 --> 00:01:53.270 align:start position:0%
+they can provide the folder id and the
+folder<00:01:52.479><c> ids</c>
+
+00:01:53.270 --> 00:01:53.280 align:start position:0%
+folder ids
+ 
+
+00:01:53.280 --> 00:01:54.870 align:start position:0%
+folder ids
+is<00:01:53.360><c> going</c><00:01:53.439><c> to</c><00:01:53.520><c> be</c><00:01:53.600><c> a</c><00:01:53.759><c> list</c><00:01:54.000><c> data</c><00:01:54.320><c> type</c><00:01:54.640><c> so</c><00:01:54.799><c> i'm</c>
+
+00:01:54.870 --> 00:01:54.880 align:start position:0%
+is going to be a list data type so i'm
+ 
+
+00:01:54.880 --> 00:01:57.749 align:start position:0%
+is going to be a list data type so i'm
+going<00:01:55.200><c> to</c><00:01:55.520><c> specify</c><00:01:56.240><c> as</c><00:01:56.399><c> a</c><00:01:56.560><c> list</c>
+
+00:01:57.749 --> 00:01:57.759 align:start position:0%
+going to specify as a list
+ 
+
+00:01:57.759 --> 00:02:00.149 align:start position:0%
+going to specify as a list
+i'm<00:01:58.000><c> going</c><00:01:58.240><c> to</c><00:01:58.479><c> set</c><00:01:58.719><c> the</c><00:01:59.280><c> default</c><00:01:59.680><c> value</c><00:01:59.920><c> to</c>
+
+00:02:00.149 --> 00:02:00.159 align:start position:0%
+i'm going to set the default value to
+ 
+
+00:02:00.159 --> 00:02:02.950 align:start position:0%
+i'm going to set the default value to
+none
+
+00:02:02.950 --> 00:02:02.960 align:start position:0%
+ 
+ 
+
+00:02:02.960 --> 00:02:05.429 align:start position:0%
+ 
+inside<00:02:03.280><c> the</c><00:02:03.439><c> function</c><00:02:04.159><c> i'm</c><00:02:04.320><c> going</c><00:02:04.640><c> to</c><00:02:05.200><c> check</c>
+
+00:02:05.429 --> 00:02:05.439 align:start position:0%
+inside the function i'm going to check
+ 
+
+00:02:05.439 --> 00:02:07.990 align:start position:0%
+inside the function i'm going to check
+whether<00:02:05.759><c> or</c><00:02:05.759><c> not</c><00:02:06.000><c> if</c><00:02:06.079><c> the</c><00:02:06.320><c> file</c><00:02:06.640><c> exists</c><00:02:07.040><c> first</c>
+
+00:02:07.990 --> 00:02:08.000 align:start position:0%
+whether or not if the file exists first
+ 
+
+00:02:08.000 --> 00:02:10.550 align:start position:0%
+whether or not if the file exists first
+so<00:02:08.160><c> i'm</c><00:02:08.239><c> going</c><00:02:08.399><c> to</c><00:02:08.560><c> insert</c><00:02:08.879><c> if</c><00:02:09.039><c> condition</c><00:02:10.479><c> and</c>
+
+00:02:10.550 --> 00:02:10.560 align:start position:0%
+so i'm going to insert if condition and
+ 
+
+00:02:10.560 --> 00:02:11.510 align:start position:0%
+so i'm going to insert if condition and
+i'm<00:02:10.720><c> going</c><00:02:10.879><c> to</c><00:02:10.959><c> say</c><00:02:11.200><c> that</c>
+
+00:02:11.510 --> 00:02:11.520 align:start position:0%
+i'm going to say that
+ 
+
+00:02:11.520 --> 00:02:16.070 align:start position:0%
+i'm going to say that
+if<00:02:11.760><c> not</c><00:02:12.480><c> o</c><00:02:12.720><c> is</c><00:02:12.879><c> that</c><00:02:13.120><c> path</c><00:02:14.000><c> that</c><00:02:14.239><c> exists</c>
+
+00:02:16.070 --> 00:02:16.080 align:start position:0%
+if not o is that path that exists
+ 
+
+00:02:16.080 --> 00:02:18.710 align:start position:0%
+if not o is that path that exists
+i'm<00:02:16.400><c> going</c><00:02:16.640><c> to</c><00:02:17.200><c> provide</c><00:02:17.599><c> the</c><00:02:18.000><c> file</c><00:02:18.319><c> path</c>
+
+00:02:18.710 --> 00:02:18.720 align:start position:0%
+i'm going to provide the file path
+ 
+
+00:02:18.720 --> 00:02:20.869 align:start position:0%
+i'm going to provide the file path
+argument
+
+00:02:20.869 --> 00:02:20.879 align:start position:0%
+argument
+ 
+
+00:02:20.879 --> 00:02:23.510 align:start position:0%
+argument
+and<00:02:21.040><c> if</c><00:02:21.200><c> this</c><00:02:21.360><c> condition</c><00:02:21.840><c> is</c><00:02:22.000><c> met</c><00:02:23.040><c> then</c><00:02:23.200><c> i</c><00:02:23.360><c> know</c>
+
+00:02:23.510 --> 00:02:23.520 align:start position:0%
+and if this condition is met then i know
+ 
+
+00:02:23.520 --> 00:02:24.309 align:start position:0%
+and if this condition is met then i know
+the<00:02:23.760><c> file</c>
+
+00:02:24.309 --> 00:02:24.319 align:start position:0%
+the file
+ 
+
+00:02:24.319 --> 00:02:26.790 align:start position:0%
+the file
+does<00:02:24.640><c> not</c><00:02:24.800><c> exist</c><00:02:25.840><c> so</c><00:02:26.000><c> i'm</c><00:02:26.080><c> going</c><00:02:26.319><c> to</c><00:02:26.480><c> print</c><00:02:26.640><c> a</c>
+
+00:02:26.790 --> 00:02:26.800 align:start position:0%
+does not exist so i'm going to print a
+ 
+
+00:02:26.800 --> 00:02:29.270 align:start position:0%
+does not exist so i'm going to print a
+message
+
+00:02:29.270 --> 00:02:29.280 align:start position:0%
+ 
+ 
+
+00:02:29.280 --> 00:02:34.830 align:start position:0%
+ 
+file<00:02:29.680><c> path</c><00:02:32.160><c> not</c>
+
+00:02:34.830 --> 00:02:34.840 align:start position:0%
+ 
+ 
+
+00:02:34.840 --> 00:02:37.509 align:start position:0%
+ 
+found
+
+00:02:37.509 --> 00:02:37.519 align:start position:0%
+found
+ 
+
+00:02:37.519 --> 00:02:41.750 align:start position:0%
+found
+i<00:02:37.680><c> want</c><00:02:37.920><c> to</c><00:02:38.080><c> return</c><00:02:38.959><c> that's</c><00:02:39.280><c> nothing</c>
+
+00:02:41.750 --> 00:02:41.760 align:start position:0%
+i want to return that's nothing
+ 
+
+00:02:41.760 --> 00:02:44.790 align:start position:0%
+i want to return that's nothing
+otherwise<00:02:42.480><c> i'm</c><00:02:42.720><c> going</c><00:02:42.959><c> to</c><00:02:43.360><c> insert</c><00:02:44.000><c> try</c><00:02:44.319><c> accept</c>
+
+00:02:44.790 --> 00:02:44.800 align:start position:0%
+otherwise i'm going to insert try accept
+ 
+
+00:02:44.800 --> 00:02:48.949 align:start position:0%
+otherwise i'm going to insert try accept
+block
+
+00:02:48.949 --> 00:02:48.959 align:start position:0%
+ 
+ 
+
+00:02:48.959 --> 00:02:52.790 align:start position:0%
+ 
+and<00:02:49.120><c> this</c><00:02:49.280><c> will</c><00:02:49.440><c> be</c><00:02:49.920><c> accept</c><00:02:50.480><c> exception</c><00:02:51.280><c> lc</c>
+
+00:02:52.790 --> 00:02:52.800 align:start position:0%
+and this will be accept exception lc
+ 
+
+00:02:52.800 --> 00:02:55.750 align:start position:0%
+and this will be accept exception lc
+and<00:02:52.959><c> want</c><00:02:53.120><c> to</c><00:02:53.280><c> print</c><00:02:53.599><c> the</c><00:02:53.760><c> error</c><00:02:54.000><c> message</c><00:02:55.599><c> i</c>
+
+00:02:55.750 --> 00:02:55.760 align:start position:0%
+and want to print the error message i
+ 
+
+00:02:55.760 --> 00:02:56.869 align:start position:0%
+and want to print the error message i
+also<00:02:56.000><c> want</c><00:02:56.239><c> to</c><00:02:56.400><c> return</c>
+
+00:02:56.869 --> 00:02:56.879 align:start position:0%
+also want to return
+ 
+
+00:02:56.879 --> 00:03:01.589 align:start position:0%
+also want to return
+nothing
+
+00:03:01.589 --> 00:03:01.599 align:start position:0%
+ 
+ 
+
+00:03:01.599 --> 00:03:04.790 align:start position:0%
+ 
+now<00:03:01.840><c> let's</c><00:03:01.920><c> go</c><00:03:02.080><c> back</c><00:03:02.319><c> to</c><00:03:02.480><c> the</c><00:03:02.720><c> try</c><00:03:02.959><c> block</c><00:03:04.560><c> here</c>
+
+00:03:04.790 --> 00:03:04.800 align:start position:0%
+now let's go back to the try block here
+ 
+
+00:03:04.800 --> 00:03:05.750 align:start position:0%
+now let's go back to the try block here
+i'm<00:03:04.959><c> going</c><00:03:05.280><c> to</c>
+
+00:03:05.750 --> 00:03:05.760 align:start position:0%
+i'm going to
+ 
+
+00:03:05.760 --> 00:03:10.949 align:start position:0%
+i'm going to
+create<00:03:06.000><c> my</c><00:03:06.239><c> file</c><00:03:06.560><c> metadata</c><00:03:07.280><c> object</c>
+
+00:03:10.949 --> 00:03:10.959 align:start position:0%
+ 
+ 
+
+00:03:10.959 --> 00:03:13.750 align:start position:0%
+ 
+and<00:03:11.120><c> it's</c><00:03:11.200><c> going</c><00:03:11.280><c> to</c><00:03:11.360><c> be</c><00:03:11.440><c> a</c><00:03:11.519><c> dictionary</c><00:03:13.440><c> here's</c>
+
+00:03:13.750 --> 00:03:13.760 align:start position:0%
+and it's going to be a dictionary here's
+ 
+
+00:03:13.760 --> 00:03:15.430 align:start position:0%
+and it's going to be a dictionary here's
+where<00:03:13.920><c> you</c><00:03:14.000><c> can</c><00:03:14.159><c> provide</c><00:03:14.560><c> the</c><00:03:14.800><c> metadata</c>
+
+00:03:15.430 --> 00:03:15.440 align:start position:0%
+where you can provide the metadata
+ 
+
+00:03:15.440 --> 00:03:17.110 align:start position:0%
+where you can provide the metadata
+information
+
+00:03:17.110 --> 00:03:17.120 align:start position:0%
+information
+ 
+
+00:03:17.120 --> 00:03:20.550 align:start position:0%
+information
+want<00:03:17.360><c> to</c><00:03:18.000><c> um</c><00:03:18.720><c> set</c><00:03:18.879><c> the</c><00:03:19.120><c> name</c><00:03:19.519><c> to</c><00:03:19.840><c> just</c><00:03:20.080><c> the</c><00:03:20.239><c> base</c>
+
+00:03:20.550 --> 00:03:20.560 align:start position:0%
+want to um set the name to just the base
+ 
+
+00:03:20.560 --> 00:03:21.910 align:start position:0%
+want to um set the name to just the base
+name
+
+00:03:21.910 --> 00:03:21.920 align:start position:0%
+name
+ 
+
+00:03:21.920 --> 00:03:26.869 align:start position:0%
+name
+for<00:03:22.080><c> the</c><00:03:22.239><c> file</c><00:03:22.480><c> name</c><00:03:24.400><c> so</c><00:03:24.799><c> for</c><00:03:25.040><c> the</c><00:03:25.200><c> first</c><00:03:25.519><c> file</c>
+
+00:03:26.869 --> 00:03:26.879 align:start position:0%
+for the file name so for the first file
+ 
+
+00:03:26.879 --> 00:03:30.830 align:start position:0%
+for the file name so for the first file
+the<00:03:27.040><c> file</c><00:03:27.280><c> name</c><00:03:27.440><c> will</c><00:03:27.599><c> be</c><00:03:27.920><c> fortune</c><00:03:28.400><c> 1000</c><00:03:29.680><c> and</c>
+
+00:03:30.830 --> 00:03:30.840 align:start position:0%
+the file name will be fortune 1000 and
+ 
+
+00:03:30.840 --> 00:03:34.309 align:start position:0%
+the file name will be fortune 1000 and
+2012.<00:03:32.879><c> so</c><00:03:33.040><c> i'm</c><00:03:33.120><c> going</c><00:03:33.360><c> to</c><00:03:33.519><c> insert</c><00:03:33.840><c> the</c><00:03:34.000><c> os</c>
+
+00:03:34.309 --> 00:03:34.319 align:start position:0%
+2012. so i'm going to insert the os
+ 
+
+00:03:34.319 --> 00:03:36.390 align:start position:0%
+2012. so i'm going to insert the os
+library<00:03:34.799><c> that</c><00:03:35.120><c> path</c>
+
+00:03:36.390 --> 00:03:36.400 align:start position:0%
+library that path
+ 
+
+00:03:36.400 --> 00:03:38.949 align:start position:0%
+library that path
+the<00:03:36.640><c> base</c><00:03:36.959><c> name</c><00:03:37.599><c> i</c><00:03:37.760><c> want</c><00:03:37.840><c> to</c><00:03:38.080><c> grab</c><00:03:38.319><c> the</c><00:03:38.640><c> file</c>
+
+00:03:38.949 --> 00:03:38.959 align:start position:0%
+the base name i want to grab the file
+ 
+
+00:03:38.959 --> 00:03:40.710 align:start position:0%
+the base name i want to grab the file
+base<00:03:39.200><c> name</c><00:03:39.519><c> first</c>
+
+00:03:40.710 --> 00:03:40.720 align:start position:0%
+base name first
+ 
+
+00:03:40.720 --> 00:03:44.710 align:start position:0%
+base name first
+and<00:03:40.959><c> i'll</c><00:03:41.280><c> provide</c><00:03:41.680><c> the</c><00:03:42.080><c> file</c><00:03:42.400><c> path</c><00:03:42.879><c> argument</c>
+
+00:03:44.710 --> 00:03:44.720 align:start position:0%
+and i'll provide the file path argument
+ 
+
+00:03:44.720 --> 00:03:47.430 align:start position:0%
+and i'll provide the file path argument
+next<00:03:45.040><c> i</c><00:03:45.120><c> want</c><00:03:45.280><c> to</c><00:03:45.440><c> get</c><00:03:45.680><c> rid</c><00:03:45.840><c> of</c><00:03:46.000><c> the</c><00:03:46.159><c> extension</c>
+
+00:03:47.430 --> 00:03:47.440 align:start position:0%
+next i want to get rid of the extension
+ 
+
+00:03:47.440 --> 00:03:49.910 align:start position:0%
+next i want to get rid of the extension
+and<00:03:47.599><c> to</c><00:03:47.760><c> do</c><00:03:47.920><c> that</c><00:03:48.159><c> so</c><00:03:48.239><c> i'm</c><00:03:48.400><c> going</c><00:03:48.720><c> to</c><00:03:48.959><c> wrap</c>
+
+00:03:49.910 --> 00:03:49.920 align:start position:0%
+and to do that so i'm going to wrap
+ 
+
+00:03:49.920 --> 00:03:53.270 align:start position:0%
+and to do that so i'm going to wrap
+the<00:03:50.560><c> output</c><00:03:51.280><c> with</c><00:03:51.599><c> another</c><00:03:52.000><c> os</c><00:03:52.319><c> module</c>
+
+00:03:53.270 --> 00:03:53.280 align:start position:0%
+the output with another os module
+ 
+
+00:03:53.280 --> 00:03:57.589 align:start position:0%
+the output with another os module
+the<00:03:53.920><c> path</c><00:03:54.560><c> that's</c><00:03:54.959><c> blur</c><00:03:55.280><c> text</c>
+
+00:03:57.589 --> 00:03:57.599 align:start position:0%
+the path that's blur text
+ 
+
+00:03:57.599 --> 00:03:59.910 align:start position:0%
+the path that's blur text
+i<00:03:57.760><c> want</c><00:03:57.920><c> to</c><00:03:58.159><c> grab</c><00:03:58.400><c> the</c><00:03:58.640><c> first</c><00:03:58.959><c> element</c><00:03:59.599><c> so</c>
+
+00:03:59.910 --> 00:03:59.920 align:start position:0%
+i want to grab the first element so
+ 
+
+00:03:59.920 --> 00:04:00.869 align:start position:0%
+i want to grab the first element so
+assign
+
+00:04:00.869 --> 00:04:00.879 align:start position:0%
+assign
+ 
+
+00:04:00.879 --> 00:04:04.630 align:start position:0%
+assign
+0<00:04:03.040><c> next</c><00:04:03.360><c> we</c><00:04:03.519><c> need</c><00:04:03.760><c> to</c>
+
+00:04:04.630 --> 00:04:04.640 align:start position:0%
+0 next we need to
+ 
+
+00:04:04.640 --> 00:04:07.990 align:start position:0%
+0 next we need to
+specify<00:04:05.439><c> the</c><00:04:06.080><c> mime</c><00:04:06.400><c> type</c>
+
+00:04:07.990 --> 00:04:08.000 align:start position:0%
+specify the mime type
+ 
+
+00:04:08.000 --> 00:04:11.190 align:start position:0%
+specify the mime type
+of<00:04:08.239><c> the</c><00:04:08.480><c> file</c><00:04:09.360><c> that</c><00:04:09.439><c> i</c><00:04:09.599><c> want</c><00:04:09.840><c> to</c><00:04:10.080><c> convert</c><00:04:10.480><c> to</c>
+
+00:04:11.190 --> 00:04:11.200 align:start position:0%
+of the file that i want to convert to
+ 
+
+00:04:11.200 --> 00:04:13.030 align:start position:0%
+of the file that i want to convert to
+and<00:04:11.360><c> i</c><00:04:11.519><c> want</c><00:04:11.680><c> to</c><00:04:11.840><c> convert</c><00:04:12.159><c> the</c><00:04:12.319><c> file</c><00:04:12.640><c> from</c>
+
+00:04:13.030 --> 00:04:13.040 align:start position:0%
+and i want to convert the file from
+ 
+
+00:04:13.040 --> 00:04:15.110 align:start position:0%
+and i want to convert the file from
+excel<00:04:13.360><c> spreadsheet</c><00:04:13.920><c> to</c><00:04:14.080><c> a</c><00:04:14.319><c> google</c><00:04:14.640><c> sheets</c>
+
+00:04:15.110 --> 00:04:15.120 align:start position:0%
+excel spreadsheet to a google sheets
+ 
+
+00:04:15.120 --> 00:04:18.629 align:start position:0%
+excel spreadsheet to a google sheets
+uh<00:04:15.519><c> format</c><00:04:16.639><c> so</c><00:04:16.799><c> here</c><00:04:17.040><c> if</c><00:04:17.199><c> you</c><00:04:17.359><c> go</c><00:04:17.680><c> to</c><00:04:18.079><c> g</c><00:04:18.239><c> suite</c>
+
+00:04:18.629 --> 00:04:18.639 align:start position:0%
+uh format so here if you go to g suite
+ 
+
+00:04:18.639 --> 00:04:20.310 align:start position:0%
+uh format so here if you go to g suite
+and<00:04:18.959><c> drive</c><00:04:19.359><c> my</c><00:04:19.680><c> types</c>
+
+00:04:20.310 --> 00:04:20.320 align:start position:0%
+and drive my types
+ 
+
+00:04:20.320 --> 00:04:23.510 align:start position:0%
+and drive my types
+page<00:04:21.519><c> and</c><00:04:21.759><c> if</c><00:04:21.919><c> you</c><00:04:22.000><c> scroll</c><00:04:22.320><c> down</c><00:04:22.960><c> here's</c><00:04:23.199><c> the</c>
+
+00:04:23.510 --> 00:04:23.520 align:start position:0%
+page and if you scroll down here's the
+ 
+
+00:04:23.520 --> 00:04:25.430 align:start position:0%
+page and if you scroll down here's the
+google<00:04:23.919><c> sheets</c><00:04:24.320><c> my</c><00:04:24.560><c> type</c>
+
+00:04:25.430 --> 00:04:25.440 align:start position:0%
+google sheets my type
+ 
+
+00:04:25.440 --> 00:04:28.950 align:start position:0%
+google sheets my type
+i'm<00:04:25.600><c> going</c><00:04:25.840><c> to</c><00:04:26.240><c> copy</c><00:04:26.960><c> the</c><00:04:27.199><c> value</c>
+
+00:04:28.950 --> 00:04:28.960 align:start position:0%
+i'm going to copy the value
+ 
+
+00:04:28.960 --> 00:04:31.110 align:start position:0%
+i'm going to copy the value
+and<00:04:29.120><c> just</c><00:04:29.360><c> paste</c><00:04:29.680><c> it</c><00:04:30.160><c> to</c><00:04:30.320><c> the</c><00:04:30.560><c> my</c><00:04:30.880><c> type</c>
+
+00:04:31.110 --> 00:04:31.120 align:start position:0%
+and just paste it to the my type
+ 
+
+00:04:31.120 --> 00:04:33.590 align:start position:0%
+and just paste it to the my type
+parameter
+
+00:04:33.590 --> 00:04:33.600 align:start position:0%
+parameter
+ 
+
+00:04:33.600 --> 00:04:36.870 align:start position:0%
+parameter
+in<00:04:33.759><c> case</c><00:04:34.080><c> form</c><00:04:34.400><c> to</c><00:04:35.040><c> upload</c><00:04:35.680><c> the</c><00:04:36.080><c> file</c><00:04:36.560><c> to</c><00:04:36.720><c> a</c>
+
+00:04:36.870 --> 00:04:36.880 align:start position:0%
+in case form to upload the file to a
+ 
+
+00:04:36.880 --> 00:04:38.870 align:start position:0%
+in case form to upload the file to a
+google<00:04:37.199><c> drive</c><00:04:37.440><c> folder</c>
+
+00:04:38.870 --> 00:04:38.880 align:start position:0%
+google drive folder
+ 
+
+00:04:38.880 --> 00:04:41.670 align:start position:0%
+google drive folder
+we<00:04:39.040><c> can</c><00:04:39.280><c> assign</c><00:04:40.160><c> the</c><00:04:40.400><c> folder</c><00:04:40.800><c> id</c><00:04:41.360><c> to</c><00:04:41.520><c> the</c>
+
+00:04:41.670 --> 00:04:41.680 align:start position:0%
+we can assign the folder id to the
+ 
+
+00:04:41.680 --> 00:04:43.830 align:start position:0%
+we can assign the folder id to the
+appearance<00:04:42.240><c> parameter</c>
+
+00:04:43.830 --> 00:04:43.840 align:start position:0%
+appearance parameter
+ 
+
+00:04:43.840 --> 00:04:46.230 align:start position:0%
+appearance parameter
+and<00:04:44.080><c> because</c><00:04:44.320><c> we'll</c><00:04:44.560><c> set</c><00:04:44.880><c> the</c><00:04:45.520><c> default</c><00:04:45.919><c> value</c>
+
+00:04:46.230 --> 00:04:46.240 align:start position:0%
+and because we'll set the default value
+ 
+
+00:04:46.240 --> 00:04:47.430 align:start position:0%
+and because we'll set the default value
+to<00:04:46.400><c> none</c>
+
+00:04:47.430 --> 00:04:47.440 align:start position:0%
+to none
+ 
+
+00:04:47.440 --> 00:04:50.390 align:start position:0%
+to none
+when<00:04:47.600><c> we</c><00:04:47.759><c> upload</c><00:04:48.160><c> the</c><00:04:48.320><c> file</c><00:04:49.680><c> the</c><00:04:50.000><c> file</c><00:04:50.240><c> is</c>
+
+00:04:50.390 --> 00:04:50.400 align:start position:0%
+when we upload the file the file is
+ 
+
+00:04:50.400 --> 00:04:52.150 align:start position:0%
+when we upload the file the file is
+going<00:04:50.560><c> to</c><00:04:50.720><c> get</c><00:04:50.960><c> uploaded</c><00:04:51.360><c> to</c><00:04:51.680><c> the</c>
+
+00:04:52.150 --> 00:04:52.160 align:start position:0%
+going to get uploaded to the
+ 
+
+00:04:52.160 --> 00:04:54.830 align:start position:0%
+going to get uploaded to the
+main<00:04:52.400><c> folder</c><00:04:52.800><c> which</c><00:04:53.040><c> is</c><00:04:53.280><c> on</c><00:04:53.360><c> the</c><00:04:53.759><c> my</c><00:04:54.080><c> drive</c>
+
+00:04:54.830 --> 00:04:54.840 align:start position:0%
+main folder which is on the my drive
+ 
+
+00:04:54.840 --> 00:04:56.550 align:start position:0%
+main folder which is on the my drive
+folder
+
+00:04:56.550 --> 00:04:56.560 align:start position:0%
+folder
+ 
+
+00:04:56.560 --> 00:04:58.469 align:start position:0%
+folder
+and<00:04:56.639><c> that's</c><00:04:56.880><c> everything</c><00:04:57.199><c> we</c><00:04:57.280><c> need</c><00:04:57.520><c> to</c><00:04:57.759><c> provide</c>
+
+00:04:58.469 --> 00:04:58.479 align:start position:0%
+and that's everything we need to provide
+ 
+
+00:04:58.479 --> 00:05:01.189 align:start position:0%
+and that's everything we need to provide
+for<00:04:58.880><c> the</c><00:04:59.199><c> filemaker</c><00:04:59.680><c> data</c><00:05:00.000><c> object</c>
+
+00:05:01.189 --> 00:05:01.199 align:start position:0%
+for the filemaker data object
+ 
+
+00:05:01.199 --> 00:05:03.990 align:start position:0%
+for the filemaker data object
+next<00:05:01.520><c> we</c><00:05:01.680><c> need</c><00:05:01.840><c> to</c><00:05:02.160><c> convert</c><00:05:02.720><c> our</c><00:05:03.039><c> excel</c><00:05:03.440><c> file</c>
+
+00:05:03.990 --> 00:05:04.000 align:start position:0%
+next we need to convert our excel file
+ 
+
+00:05:04.000 --> 00:05:04.550 align:start position:0%
+next we need to convert our excel file
+to
+
+00:05:04.550 --> 00:05:04.560 align:start position:0%
+to
+ 
+
+00:05:04.560 --> 00:05:07.110 align:start position:0%
+to
+uh<00:05:04.800><c> by</c><00:05:05.039><c> string</c><00:05:05.919><c> and</c><00:05:06.080><c> here</c><00:05:06.240><c> i'm</c><00:05:06.400><c> going</c><00:05:06.560><c> to</c><00:05:06.720><c> use</c>
+
+00:05:07.110 --> 00:05:07.120 align:start position:0%
+uh by string and here i'm going to use
+ 
+
+00:05:07.120 --> 00:05:07.990 align:start position:0%
+uh by string and here i'm going to use
+the<00:05:07.440><c> media</c>
+
+00:05:07.990 --> 00:05:08.000 align:start position:0%
+the media
+ 
+
+00:05:08.000 --> 00:05:10.950 align:start position:0%
+the media
+file<00:05:08.320><c> upload</c><00:05:08.840><c> class</c><00:05:10.479><c> and</c><00:05:10.639><c> the</c><00:05:10.720><c> first</c>
+
+00:05:10.950 --> 00:05:10.960 align:start position:0%
+file upload class and the first
+ 
+
+00:05:10.960 --> 00:05:12.070 align:start position:0%
+file upload class and the first
+parameter<00:05:11.440><c> is</c><00:05:11.600><c> the</c>
+
+00:05:12.070 --> 00:05:12.080 align:start position:0%
+parameter is the
+ 
+
+00:05:12.080 --> 00:05:15.270 align:start position:0%
+parameter is the
+file<00:05:12.400><c> name</c>
+
+00:05:15.270 --> 00:05:15.280 align:start position:0%
+ 
+ 
+
+00:05:15.280 --> 00:05:17.110 align:start position:0%
+ 
+and<00:05:15.440><c> it's</c><00:05:15.520><c> going</c><00:05:15.600><c> to</c><00:05:15.680><c> be</c><00:05:15.840><c> from</c><00:05:16.320><c> file</c><00:05:16.720><c> path</c>
+
+00:05:17.110 --> 00:05:17.120 align:start position:0%
+and it's going to be from file path
+ 
+
+00:05:17.120 --> 00:05:18.550 align:start position:0%
+and it's going to be from file path
+argument
+
+00:05:18.550 --> 00:05:18.560 align:start position:0%
+argument
+ 
+
+00:05:18.560 --> 00:05:22.070 align:start position:0%
+argument
+and<00:05:18.720><c> the</c><00:05:18.880><c> second</c><00:05:19.120><c> parameter</c><00:05:19.600><c> is</c><00:05:19.759><c> the</c><00:05:20.000><c> my</c><00:05:20.320><c> type</c>
+
+00:05:22.070 --> 00:05:22.080 align:start position:0%
+and the second parameter is the my type
+ 
+
+00:05:22.080 --> 00:05:23.990 align:start position:0%
+and the second parameter is the my type
+for<00:05:22.320><c> excel</c><00:05:22.560><c> spreadsheet</c><00:05:23.120><c> my</c><00:05:23.360><c> type</c><00:05:23.680><c> i'm</c><00:05:23.840><c> going</c>
+
+00:05:23.990 --> 00:05:24.000 align:start position:0%
+for excel spreadsheet my type i'm going
+ 
+
+00:05:24.000 --> 00:05:26.230 align:start position:0%
+for excel spreadsheet my type i'm going
+to<00:05:24.160><c> just</c><00:05:24.400><c> copy</c><00:05:24.800><c> paste</c><00:05:25.199><c> the</c>
+
+00:05:26.230 --> 00:05:26.240 align:start position:0%
+to just copy paste the
+ 
+
+00:05:26.240 --> 00:05:41.430 align:start position:0%
+to just copy paste the
+the<00:05:26.479><c> my</c><00:05:36.840><c> type</c>
+
+00:05:41.430 --> 00:05:41.440 align:start position:0%
+ 
+ 
+
+00:05:41.440 --> 00:05:43.830 align:start position:0%
+ 
+now<00:05:41.680><c> we</c><00:05:41.759><c> can</c><00:05:41.919><c> perform</c><00:05:42.320><c> the</c><00:05:42.479><c> file</c><00:05:42.720><c> conversion</c>
+
+00:05:43.830 --> 00:05:43.840 align:start position:0%
+now we can perform the file conversion
+ 
+
+00:05:43.840 --> 00:05:45.670 align:start position:0%
+now we can perform the file conversion
+in<00:05:44.000><c> here</c><00:05:44.160><c> i'm</c><00:05:44.240><c> going</c><00:05:44.479><c> to</c><00:05:44.639><c> insert</c><00:05:45.039><c> my</c><00:05:45.280><c> service</c>
+
+00:05:45.670 --> 00:05:45.680 align:start position:0%
+in here i'm going to insert my service
+ 
+
+00:05:45.680 --> 00:05:46.230 align:start position:0%
+in here i'm going to insert my service
+option
+
+00:05:46.230 --> 00:05:46.240 align:start position:0%
+option
+ 
+
+00:05:46.240 --> 00:05:49.350 align:start position:0%
+option
+dot<00:05:46.560><c> files</c><00:05:47.680><c> dot</c><00:05:47.919><c> create</c>
+
+00:05:49.350 --> 00:05:49.360 align:start position:0%
+dot files dot create
+ 
+
+00:05:49.360 --> 00:05:52.710 align:start position:0%
+dot files dot create
+for<00:05:49.600><c> the</c><00:05:49.680><c> media</c><00:05:50.080><c> body</c><00:05:50.840><c> parameter</c>
+
+00:05:52.710 --> 00:05:52.720 align:start position:0%
+for the media body parameter
+ 
+
+00:05:52.720 --> 00:05:55.909 align:start position:0%
+for the media body parameter
+i'm<00:05:52.960><c> going</c><00:05:53.199><c> to</c><00:05:53.360><c> assign</c><00:05:53.919><c> the</c><00:05:54.160><c> media</c><00:05:54.560><c> object</c><00:05:55.680><c> and</c>
+
+00:05:55.909 --> 00:05:55.919 align:start position:0%
+i'm going to assign the media object and
+ 
+
+00:05:55.919 --> 00:05:57.670 align:start position:0%
+i'm going to assign the media object and
+for<00:05:56.080><c> the</c><00:05:56.240><c> body</c><00:05:56.560><c> parameter</c>
+
+00:05:57.670 --> 00:05:57.680 align:start position:0%
+for the body parameter
+ 
+
+00:05:57.680 --> 00:06:01.110 align:start position:0%
+for the body parameter
+i'm<00:05:57.919><c> going</c><00:05:58.080><c> to</c><00:05:58.240><c> assign</c><00:05:58.800><c> file</c><00:05:59.120><c> metadata</c><00:05:59.840><c> object</c>
+
+00:06:01.110 --> 00:06:01.120 align:start position:0%
+i'm going to assign file metadata object
+ 
+
+00:06:01.120 --> 00:06:04.230 align:start position:0%
+i'm going to assign file metadata object
+and<00:06:01.280><c> here</c><00:06:01.440><c> i</c><00:06:01.520><c> need</c><00:06:01.680><c> to</c><00:06:01.919><c> type</c><00:06:02.319><c> the</c><00:06:02.560><c> sql</c>
+
+00:06:04.230 --> 00:06:04.240 align:start position:0%
+and here i need to type the sql
+ 
+
+00:06:04.240 --> 00:06:06.150 align:start position:0%
+and here i need to type the sql
+now<00:06:04.560><c> save</c><00:06:04.800><c> the</c><00:06:04.960><c> output</c><00:06:05.280><c> to</c><00:06:05.440><c> an</c><00:06:05.600><c> objective</c>
+
+00:06:06.150 --> 00:06:06.160 align:start position:0%
+now save the output to an objective
+ 
+
+00:06:06.160 --> 00:06:09.110 align:start position:0%
+now save the output to an objective
+response
+
+00:06:09.110 --> 00:06:09.120 align:start position:0%
+ 
+ 
+
+00:06:09.120 --> 00:06:11.909 align:start position:0%
+ 
+i<00:06:09.280><c> also</c><00:06:09.520><c> want</c><00:06:09.759><c> to</c><00:06:09.919><c> print</c><00:06:10.160><c> the</c><00:06:10.319><c> response</c><00:06:10.880><c> option</c>
+
+00:06:11.909 --> 00:06:11.919 align:start position:0%
+i also want to print the response option
+ 
+
+00:06:11.919 --> 00:06:12.550 align:start position:0%
+i also want to print the response option
+followed<00:06:12.240><c> by</c>
+
+00:06:12.550 --> 00:06:12.560 align:start position:0%
+followed by
+ 
+
+00:06:12.560 --> 00:06:18.870 align:start position:0%
+followed by
+return<00:06:13.280><c> response</c>
+
+00:06:18.870 --> 00:06:18.880 align:start position:0%
+ 
+ 
+
+00:06:18.880 --> 00:06:21.590 align:start position:0%
+ 
+right<00:06:19.120><c> so</c><00:06:19.360><c> that's</c><00:06:19.600><c> absolutely</c><00:06:20.240><c> to</c><00:06:20.560><c> write</c><00:06:21.120><c> uh</c>
+
+00:06:21.590 --> 00:06:21.600 align:start position:0%
+right so that's absolutely to write uh
+ 
+
+00:06:21.600 --> 00:06:23.350 align:start position:0%
+right so that's absolutely to write uh
+to<00:06:21.840><c> create</c><00:06:22.240><c> the</c>
+
+00:06:23.350 --> 00:06:23.360 align:start position:0%
+to create the
+ 
+
+00:06:23.360 --> 00:06:26.790 align:start position:0%
+to create the
+convert<00:06:23.759><c> excel</c><00:06:24.160><c> file</c><00:06:24.479><c> function</c><00:06:26.319><c> now</c><00:06:26.479><c> we</c><00:06:26.560><c> can</c>
+
+00:06:26.790 --> 00:06:26.800 align:start position:0%
+convert excel file function now we can
+ 
+
+00:06:26.800 --> 00:06:28.870 align:start position:0%
+convert excel file function now we can
+perform<00:06:27.280><c> the</c><00:06:27.520><c> excel</c><00:06:27.840><c> spreadsheet</c><00:06:28.319><c> to</c><00:06:28.560><c> google</c>
+
+00:06:28.870 --> 00:06:28.880 align:start position:0%
+perform the excel spreadsheet to google
+ 
+
+00:06:28.880 --> 00:06:30.469 align:start position:0%
+perform the excel spreadsheet to google
+sheets<00:06:29.199><c> task</c>
+
+00:06:30.469 --> 00:06:30.479 align:start position:0%
+sheets task
+ 
+
+00:06:30.479 --> 00:06:33.430 align:start position:0%
+sheets task
+now<00:06:30.639><c> i</c><00:06:30.800><c> want</c><00:06:31.039><c> to</c><00:06:31.440><c> grab</c><00:06:31.759><c> all</c><00:06:31.840><c> the</c><00:06:32.000><c> excel</c><00:06:32.400><c> files</c>
+
+00:06:33.430 --> 00:06:33.440 align:start position:0%
+now i want to grab all the excel files
+ 
+
+00:06:33.440 --> 00:06:34.230 align:start position:0%
+now i want to grab all the excel files
+in
+
+00:06:34.230 --> 00:06:34.240 align:start position:0%
+in
+ 
+
+00:06:34.240 --> 00:06:37.350 align:start position:0%
+in
+the<00:06:34.479><c> excel</c><00:06:34.960><c> files</c><00:06:35.360><c> folder</c>
+
+00:06:37.350 --> 00:06:37.360 align:start position:0%
+the excel files folder
+ 
+
+00:06:37.360 --> 00:06:39.749 align:start position:0%
+the excel files folder
+here<00:06:37.520><c> i'll</c><00:06:37.680><c> insert</c><00:06:38.000><c> my</c><00:06:38.160><c> os</c><00:06:38.479><c> module</c><00:06:39.039><c> the</c><00:06:39.520><c> list</c>
+
+00:06:39.749 --> 00:06:39.759 align:start position:0%
+here i'll insert my os module the list
+ 
+
+00:06:39.759 --> 00:06:40.710 align:start position:0%
+here i'll insert my os module the list
+dir
+
+00:06:40.710 --> 00:06:40.720 align:start position:0%
+dir
+ 
+
+00:06:40.720 --> 00:06:42.469 align:start position:0%
+dir
+and<00:06:40.880><c> i'll</c><00:06:41.039><c> use</c><00:06:41.199><c> this</c><00:06:41.360><c> function</c><00:06:41.919><c> to</c><00:06:42.080><c> list</c><00:06:42.400><c> all</c>
+
+00:06:42.469 --> 00:06:42.479 align:start position:0%
+and i'll use this function to list all
+ 
+
+00:06:42.479 --> 00:06:44.230 align:start position:0%
+and i'll use this function to list all
+the<00:06:42.639><c> files</c><00:06:43.120><c> and</c><00:06:43.360><c> folders</c>
+
+00:06:44.230 --> 00:06:44.240 align:start position:0%
+the files and folders
+ 
+
+00:06:44.240 --> 00:06:47.110 align:start position:0%
+the files and folders
+inside<00:06:44.639><c> my</c><00:06:44.880><c> excel</c><00:06:45.280><c> files</c><00:06:45.680><c> folder</c><00:06:46.720><c> and</c><00:06:46.880><c> since</c>
+
+00:06:47.110 --> 00:06:47.120 align:start position:0%
+inside my excel files folder and since
+ 
+
+00:06:47.120 --> 00:06:48.629 align:start position:0%
+inside my excel files folder and since
+there<00:06:47.280><c> are</c><00:06:47.440><c> no</c><00:06:47.680><c> folders</c>
+
+00:06:48.629 --> 00:06:48.639 align:start position:0%
+there are no folders
+ 
+
+00:06:48.639 --> 00:06:51.909 align:start position:0%
+there are no folders
+inside<00:06:49.680><c> the</c><00:06:49.840><c> excel</c><00:06:50.240><c> files</c><00:06:50.560><c> folder</c><00:06:51.599><c> it's</c><00:06:51.840><c> going</c>
+
+00:06:51.909 --> 00:06:51.919 align:start position:0%
+inside the excel files folder it's going
+ 
+
+00:06:51.919 --> 00:06:52.550 align:start position:0%
+inside the excel files folder it's going
+to<00:06:52.000><c> be</c><00:06:52.160><c> excel</c>
+
+00:06:52.550 --> 00:06:52.560 align:start position:0%
+to be excel
+ 
+
+00:06:52.560 --> 00:06:56.309 align:start position:0%
+to be excel
+files<00:06:54.080><c> in</c><00:06:54.160><c> this</c><00:06:54.400><c> case</c><00:06:54.880><c> i</c><00:06:55.120><c> can</c><00:06:55.440><c> safely</c><00:06:55.919><c> assume</c>
+
+00:06:56.309 --> 00:06:56.319 align:start position:0%
+files in this case i can safely assume
+ 
+
+00:06:56.319 --> 00:06:56.790 align:start position:0%
+files in this case i can safely assume
+that
+
+00:06:56.790 --> 00:06:56.800 align:start position:0%
+that
+ 
+
+00:06:56.800 --> 00:07:00.309 align:start position:0%
+that
+all<00:06:56.960><c> the</c><00:06:57.199><c> files</c><00:06:57.680><c> are</c><00:06:57.919><c> excel</c><00:06:58.319><c> files</c>
+
+00:07:00.309 --> 00:07:00.319 align:start position:0%
+all the files are excel files
+ 
+
+00:07:00.319 --> 00:07:02.629 align:start position:0%
+all the files are excel files
+i'm<00:07:00.560><c> going</c><00:07:00.880><c> to</c><00:07:01.039><c> name</c><00:07:01.280><c> the</c><00:07:01.520><c> output</c><00:07:01.919><c> to</c><00:07:02.160><c> excel</c>
+
+00:07:02.629 --> 00:07:02.639 align:start position:0%
+i'm going to name the output to excel
+ 
+
+00:07:02.639 --> 00:07:07.990 align:start position:0%
+i'm going to name the output to excel
+files
+
+00:07:07.990 --> 00:07:08.000 align:start position:0%
+ 
+ 
+
+00:07:08.000 --> 00:07:09.990 align:start position:0%
+ 
+now<00:07:08.160><c> i</c><00:07:08.319><c> just</c><00:07:08.479><c> need</c><00:07:08.639><c> to</c><00:07:08.880><c> erase</c><00:07:09.280><c> each</c><00:07:09.440><c> file</c>
+
+00:07:09.990 --> 00:07:10.000 align:start position:0%
+now i just need to erase each file
+ 
+
+00:07:10.000 --> 00:07:12.790 align:start position:0%
+now i just need to erase each file
+inside<00:07:10.400><c> the</c><00:07:10.560><c> excel</c><00:07:10.960><c> files</c><00:07:11.360><c> object</c>
+
+00:07:12.790 --> 00:07:12.800 align:start position:0%
+inside the excel files object
+ 
+
+00:07:12.800 --> 00:07:15.909 align:start position:0%
+inside the excel files object
+so<00:07:12.960><c> i'm</c><00:07:13.039><c> going</c><00:07:13.199><c> to</c><00:07:13.280><c> say</c><00:07:13.520><c> that</c><00:07:14.080><c> for</c><00:07:14.400><c> excel</c><00:07:14.880><c> file</c>
+
+00:07:15.909 --> 00:07:15.919 align:start position:0%
+so i'm going to say that for excel file
+ 
+
+00:07:15.919 --> 00:07:16.710 align:start position:0%
+so i'm going to say that for excel file
+in<00:07:16.160><c> excel</c>
+
+00:07:16.710 --> 00:07:16.720 align:start position:0%
+in excel
+ 
+
+00:07:16.720 --> 00:07:20.309 align:start position:0%
+in excel
+files
+
+00:07:20.309 --> 00:07:20.319 align:start position:0%
+ 
+ 
+
+00:07:20.319 --> 00:07:23.189 align:start position:0%
+ 
+i'm<00:07:20.639><c> going</c><00:07:20.880><c> to</c><00:07:21.039><c> insert</c><00:07:22.000><c> the</c><00:07:22.240><c> convert</c><00:07:22.639><c> excel</c>
+
+00:07:23.189 --> 00:07:23.199 align:start position:0%
+i'm going to insert the convert excel
+ 
+
+00:07:23.199 --> 00:07:25.270 align:start position:0%
+i'm going to insert the convert excel
+file<00:07:23.520><c> function</c>
+
+00:07:25.270 --> 00:07:25.280 align:start position:0%
+file function
+ 
+
+00:07:25.280 --> 00:07:27.749 align:start position:0%
+file function
+and<00:07:25.440><c> i'm</c><00:07:25.520><c> going</c><00:07:25.759><c> to</c><00:07:26.000><c> construct</c><00:07:26.560><c> the</c><00:07:26.800><c> file</c><00:07:27.120><c> path</c>
+
+00:07:27.749 --> 00:07:27.759 align:start position:0%
+and i'm going to construct the file path
+ 
+
+00:07:27.759 --> 00:07:30.870 align:start position:0%
+and i'm going to construct the file path
+using<00:07:28.840><c> os.path.join</c>
+
+00:07:30.870 --> 00:07:30.880 align:start position:0%
+using os.path.join
+ 
+
+00:07:30.880 --> 00:07:36.629 align:start position:0%
+using os.path.join
+i<00:07:31.120><c> need</c><00:07:31.280><c> to</c><00:07:31.520><c> provide</c><00:07:31.919><c> the</c><00:07:32.240><c> folder</c><00:07:32.720><c> path</c><00:07:33.039><c> first</c>
+
+00:07:36.629 --> 00:07:36.639 align:start position:0%
+ 
+ 
+
+00:07:36.639 --> 00:07:41.110 align:start position:0%
+ 
+followed<00:07:36.960><c> by</c><00:07:37.199><c> the</c><00:07:37.440><c> file</c><00:07:37.680><c> name</c>
+
+00:07:41.110 --> 00:07:41.120 align:start position:0%
+ 
+ 
+
+00:07:41.120 --> 00:07:43.510 align:start position:0%
+ 
+this<00:07:41.360><c> statement</c><00:07:41.680><c> right</c><00:07:41.919><c> here</c><00:07:42.479><c> will</c><00:07:43.039><c> convert</c>
+
+00:07:43.510 --> 00:07:43.520 align:start position:0%
+this statement right here will convert
+ 
+
+00:07:43.520 --> 00:07:44.550 align:start position:0%
+this statement right here will convert
+the<00:07:43.680><c> excel</c><00:07:44.080><c> file</c>
+
+00:07:44.550 --> 00:07:44.560 align:start position:0%
+the excel file
+ 
+
+00:07:44.560 --> 00:07:47.510 align:start position:0%
+the excel file
+and<00:07:44.800><c> upload</c><00:07:45.199><c> to</c><00:07:45.360><c> my</c><00:07:45.759><c> main</c><00:07:46.080><c> drive</c><00:07:46.800><c> i</c><00:07:46.960><c> also</c><00:07:47.199><c> want</c>
+
+00:07:47.510 --> 00:07:47.520 align:start position:0%
+and upload to my main drive i also want
+ 
+
+00:07:47.520 --> 00:07:50.230 align:start position:0%
+and upload to my main drive i also want
+to<00:07:47.759><c> upload</c><00:07:48.160><c> my</c><00:07:48.319><c> excel</c><00:07:48.720><c> file</c><00:07:49.120><c> to</c><00:07:49.360><c> my</c><00:07:49.520><c> your</c><00:07:49.759><c> 70</c>
+
+00:07:50.230 --> 00:07:50.240 align:start position:0%
+to upload my excel file to my your 70
+ 
+
+00:07:50.240 --> 00:07:51.430 align:start position:0%
+to upload my excel file to my your 70
+folder<00:07:50.560><c> as</c><00:07:50.639><c> well</c>
+
+00:07:51.430 --> 00:07:51.440 align:start position:0%
+folder as well
+ 
+
+00:07:51.440 --> 00:07:54.710 align:start position:0%
+folder as well
+so<00:07:51.599><c> i'm</c><00:07:51.759><c> going</c><00:07:52.000><c> to</c><00:07:52.160><c> go</c><00:07:52.319><c> into</c><00:07:52.800><c> my</c><00:07:53.199><c> u70</c><00:07:53.840><c> folder</c>
+
+00:07:54.710 --> 00:07:54.720 align:start position:0%
+so i'm going to go into my u70 folder
+ 
+
+00:07:54.720 --> 00:07:58.390 align:start position:0%
+so i'm going to go into my u70 folder
+i'm<00:07:54.960><c> going</c><00:07:55.199><c> to</c><00:07:55.360><c> grab</c><00:07:55.680><c> the</c><00:07:55.919><c> folder</c><00:07:56.840><c> id</c><00:07:57.919><c> i'll</c><00:07:58.240><c> go</c>
+
+00:07:58.390 --> 00:07:58.400 align:start position:0%
+i'm going to grab the folder id i'll go
+ 
+
+00:07:58.400 --> 00:07:59.029 align:start position:0%
+i'm going to grab the folder id i'll go
+back<00:07:58.639><c> to</c>
+
+00:07:59.029 --> 00:07:59.039 align:start position:0%
+back to
+ 
+
+00:07:59.039 --> 00:08:01.189 align:start position:0%
+back to
+my<00:07:59.440><c> python</c><00:07:59.759><c> script</c><00:08:00.560><c> and</c><00:08:00.639><c> i'll</c><00:08:00.800><c> insert</c><00:08:01.039><c> the</c>
+
+00:08:01.189 --> 00:08:01.199 align:start position:0%
+my python script and i'll insert the
+ 
+
+00:08:01.199 --> 00:08:03.670 align:start position:0%
+my python script and i'll insert the
+function<00:08:01.599><c> again</c>
+
+00:08:03.670 --> 00:08:03.680 align:start position:0%
+function again
+ 
+
+00:08:03.680 --> 00:08:07.510 align:start position:0%
+function again
+so<00:08:04.000><c> let</c><00:08:04.080><c> me</c><00:08:04.160><c> just</c><00:08:04.319><c> make</c><00:08:04.479><c> a</c><00:08:04.639><c> copy</c><00:08:05.039><c> of</c><00:08:05.520><c> line</c><00:08:05.759><c> 43</c>
+
+00:08:07.510 --> 00:08:07.520 align:start position:0%
+so let me just make a copy of line 43
+ 
+
+00:08:07.520 --> 00:08:11.110 align:start position:0%
+so let me just make a copy of line 43
+except<00:08:07.919><c> that</c><00:08:08.720><c> for</c><00:08:08.960><c> the</c><00:08:09.360><c> second</c><00:08:09.919><c> parameter</c>
+
+00:08:11.110 --> 00:08:11.120 align:start position:0%
+except that for the second parameter
+ 
+
+00:08:11.120 --> 00:08:15.430 align:start position:0%
+except that for the second parameter
+i'm<00:08:11.360><c> going</c><00:08:11.599><c> to</c><00:08:12.639><c> insert</c><00:08:12.960><c> my</c><00:08:13.199><c> list</c><00:08:13.520><c> bracket</c>
+
+00:08:15.430 --> 00:08:15.440 align:start position:0%
+i'm going to insert my list bracket
+ 
+
+00:08:15.440 --> 00:08:19.830 align:start position:0%
+i'm going to insert my list bracket
+and<00:08:15.520><c> i'm</c><00:08:15.680><c> going</c><00:08:15.919><c> to</c><00:08:16.080><c> insert</c><00:08:16.639><c> the</c><00:08:17.039><c> folder</c><00:08:17.360><c> id</c>
+
+00:08:19.830 --> 00:08:19.840 align:start position:0%
+ 
+ 
+
+00:08:19.840 --> 00:08:21.270 align:start position:0%
+ 
+all<00:08:20.000><c> right</c><00:08:20.160><c> so</c><00:08:20.319><c> that's</c><00:08:20.560><c> everything</c><00:08:20.960><c> we</c><00:08:21.120><c> need</c>
+
+00:08:21.270 --> 00:08:21.280 align:start position:0%
+all right so that's everything we need
+ 
+
+00:08:21.280 --> 00:08:23.029 align:start position:0%
+all right so that's everything we need
+to<00:08:21.520><c> write</c><00:08:22.240><c> now</c><00:08:22.400><c> if</c><00:08:22.560><c> i</c><00:08:22.720><c> press</c>
+
+00:08:23.029 --> 00:08:23.039 align:start position:0%
+to write now if i press
+ 
+
+00:08:23.039 --> 00:08:29.909 align:start position:0%
+to write now if i press
+f5<00:08:23.440><c> to</c><00:08:23.599><c> run</c><00:08:23.759><c> the</c><00:08:24.840><c> script</c>
+
+00:08:29.909 --> 00:08:29.919 align:start position:0%
+ 
+ 
+
+00:08:29.919 --> 00:08:32.389 align:start position:0%
+ 
+and<00:08:30.080><c> once</c><00:08:30.319><c> the</c><00:08:30.479><c> script</c><00:08:30.800><c> finished</c><00:08:31.120><c> running</c><00:08:32.240><c> if</c>
+
+00:08:32.389 --> 00:08:32.399 align:start position:0%
+and once the script finished running if
+ 
+
+00:08:32.399 --> 00:08:33.350 align:start position:0%
+and once the script finished running if
+i<00:08:32.560><c> go</c><00:08:32.800><c> to</c><00:08:32.959><c> my</c>
+
+00:08:33.350 --> 00:08:33.360 align:start position:0%
+i go to my
+ 
+
+00:08:33.360 --> 00:08:36.070 align:start position:0%
+i go to my
+google<00:08:33.760><c> drive</c><00:08:35.120><c> and</c><00:08:35.360><c> here</c><00:08:35.519><c> are</c><00:08:35.599><c> the</c><00:08:35.839><c> three</c>
+
+00:08:36.070 --> 00:08:36.080 align:start position:0%
+google drive and here are the three
+ 
+
+00:08:36.080 --> 00:08:37.909 align:start position:0%
+google drive and here are the three
+google<00:08:36.479><c> sheets</c><00:08:36.800><c> files</c>
+
+00:08:37.909 --> 00:08:37.919 align:start position:0%
+google sheets files
+ 
+
+00:08:37.919 --> 00:08:40.790 align:start position:0%
+google sheets files
+if<00:08:38.080><c> i</c><00:08:38.240><c> go</c><00:08:38.399><c> to</c><00:08:38.560><c> my</c><00:08:38.800><c> main</c><00:08:39.120><c> folder</c><00:08:40.320><c> and</c><00:08:40.479><c> here</c><00:08:40.640><c> are</c>
+
+00:08:40.790 --> 00:08:40.800 align:start position:0%
+if i go to my main folder and here are
+ 
+
+00:08:40.800 --> 00:08:43.430 align:start position:0%
+if i go to my main folder and here are
+the<00:08:40.959><c> other</c><00:08:41.279><c> three</c><00:08:41.680><c> google</c><00:08:42.080><c> sheets</c><00:08:42.399><c> files</c>
+
+00:08:43.430 --> 00:08:43.440 align:start position:0%
+the other three google sheets files
+ 
+
+00:08:43.440 --> 00:08:45.190 align:start position:0%
+the other three google sheets files
+so<00:08:43.680><c> this</c><00:08:43.839><c> is</c><00:08:44.080><c> someone</c><00:08:44.399><c> to</c><00:08:44.640><c> share</c><00:08:44.880><c> in</c><00:08:45.040><c> this</c>
+
+00:08:45.190 --> 00:08:45.200 align:start position:0%
+so this is someone to share in this
+ 
+
+00:08:45.200 --> 00:08:47.190 align:start position:0%
+so this is someone to share in this
+video<00:08:45.839><c> and</c><00:08:46.080><c> hopefully</c><00:08:46.399><c> you</c><00:08:46.480><c> guys</c><00:08:46.720><c> found</c><00:08:46.959><c> the</c>
+
+00:08:47.190 --> 00:08:47.200 align:start position:0%
+video and hopefully you guys found the
+ 
+
+00:08:47.200 --> 00:08:48.470 align:start position:0%
+video and hopefully you guys found the
+video<00:08:47.519><c> useful</c>
+
+00:08:48.470 --> 00:08:48.480 align:start position:0%
+video useful
+ 
+
+00:08:48.480 --> 00:08:50.070 align:start position:0%
+video useful
+and<00:08:48.640><c> as</c><00:08:48.800><c> always</c><00:08:49.440><c> thank</c><00:08:49.680><c> you</c><00:08:49.760><c> guys</c><00:08:49.920><c> for</c>
+
+00:08:50.070 --> 00:08:50.080 align:start position:0%
+and as always thank you guys for
+ 
+
+00:08:50.080 --> 00:08:52.509 align:start position:0%
+and as always thank you guys for
+watching<00:08:50.880><c> i'll</c><00:08:51.120><c> see</c><00:08:51.279><c> you</c><00:08:51.360><c> guys</c><00:08:51.680><c> on</c><00:08:51.839><c> the</c><00:08:52.000><c> next</c>
+
+00:08:52.509 --> 00:08:52.519 align:start position:0%
+watching i'll see you guys on the next
+ 
+
+00:08:52.519 --> 00:08:55.519 align:start position:0%
+watching i'll see you guys on the next
+video
+

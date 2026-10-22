@@ -1,0 +1,848 @@
+WEBVTT
+Kind: captions
+Language: en
+
+00:00:02.630 --> 00:00:06.150 align:start position:0%
+ 
+[Music]
+
+00:00:06.150 --> 00:00:06.160 align:start position:0%
+[Music]
+ 
+
+00:00:06.160 --> 00:00:07.670 align:start position:0%
+[Music]
+hey<00:00:06.399><c> how's</c><00:00:06.720><c> going</c><00:00:06.960><c> guys</c>
+
+00:00:07.670 --> 00:00:07.680 align:start position:0%
+hey how's going guys
+ 
+
+00:00:07.680 --> 00:00:09.830 align:start position:0%
+hey how's going guys
+welcome<00:00:08.000><c> to</c><00:00:08.160><c> another</c><00:00:08.559><c> google</c><00:00:08.960><c> drive</c><00:00:09.280><c> api</c><00:00:09.760><c> in</c>
+
+00:00:09.830 --> 00:00:09.840 align:start position:0%
+welcome to another google drive api in
+ 
+
+00:00:09.840 --> 00:00:12.629 align:start position:0%
+welcome to another google drive api in
+python<00:00:10.400><c> tutorial</c><00:00:10.960><c> my</c><00:00:11.200><c> name</c><00:00:11.360><c> is</c><00:00:11.440><c> jay</c>
+
+00:00:12.629 --> 00:00:12.639 align:start position:0%
+python tutorial my name is jay
+ 
+
+00:00:12.639 --> 00:00:14.549 align:start position:0%
+python tutorial my name is jay
+in<00:00:12.799><c> this</c><00:00:12.960><c> video</c><00:00:13.599><c> we're</c><00:00:13.759><c> going</c><00:00:14.000><c> to</c><00:00:14.160><c> learn</c><00:00:14.400><c> how</c>
+
+00:00:14.549 --> 00:00:14.559 align:start position:0%
+in this video we're going to learn how
+ 
+
+00:00:14.559 --> 00:00:16.150 align:start position:0%
+in this video we're going to learn how
+to<00:00:14.799><c> use</c><00:00:15.120><c> google</c><00:00:15.440><c> drive</c><00:00:15.679><c> api</c>
+
+00:00:16.150 --> 00:00:16.160 align:start position:0%
+to use google drive api
+ 
+
+00:00:16.160 --> 00:00:19.029 align:start position:0%
+to use google drive api
+to<00:00:16.320><c> create</c><00:00:16.640><c> folders</c><00:00:17.760><c> from</c><00:00:17.920><c> the</c><00:00:18.080><c> last</c><00:00:18.320><c> video</c><00:00:18.880><c> we</c>
+
+00:00:19.029 --> 00:00:19.039 align:start position:0%
+to create folders from the last video we
+ 
+
+00:00:19.039 --> 00:00:20.870 align:start position:0%
+to create folders from the last video we
+learned<00:00:19.279><c> how</c><00:00:19.520><c> to</c><00:00:19.760><c> create</c><00:00:20.000><c> a</c><00:00:20.160><c> google</c><00:00:20.560><c> drive</c>
+
+00:00:20.870 --> 00:00:20.880 align:start position:0%
+learned how to create a google drive
+ 
+
+00:00:20.880 --> 00:00:22.070 align:start position:0%
+learned how to create a google drive
+service<00:00:21.359><c> instance</c>
+
+00:00:22.070 --> 00:00:22.080 align:start position:0%
+service instance
+ 
+
+00:00:22.080 --> 00:00:24.230 align:start position:0%
+service instance
+now<00:00:22.240><c> we</c><00:00:22.320><c> can</c><00:00:22.480><c> use</c><00:00:22.640><c> that</c><00:00:22.880><c> instance</c><00:00:23.519><c> to</c><00:00:23.840><c> perform</c>
+
+00:00:24.230 --> 00:00:24.240 align:start position:0%
+now we can use that instance to perform
+ 
+
+00:00:24.240 --> 00:00:25.670 align:start position:0%
+now we can use that instance to perform
+different<00:00:24.640><c> tasks</c>
+
+00:00:25.670 --> 00:00:25.680 align:start position:0%
+different tasks
+ 
+
+00:00:25.680 --> 00:00:29.029 align:start position:0%
+different tasks
+so<00:00:25.920><c> here</c><00:00:26.160><c> we</c><00:00:26.400><c> go</c><00:00:26.640><c> to</c><00:00:26.960><c> my</c><00:00:27.760><c> google</c><00:00:28.160><c> drive</c>
+
+00:00:29.029 --> 00:00:29.039 align:start position:0%
+so here we go to my google drive
+ 
+
+00:00:29.039 --> 00:00:30.550 align:start position:0%
+so here we go to my google drive
+right<00:00:29.199><c> now</c><00:00:29.359><c> in</c><00:00:29.439><c> my</c><00:00:29.679><c> google</c><00:00:30.000><c> drive</c><00:00:30.320><c> i</c><00:00:30.400><c> don't</c>
+
+00:00:30.550 --> 00:00:30.560 align:start position:0%
+right now in my google drive i don't
+ 
+
+00:00:30.560 --> 00:00:32.630 align:start position:0%
+right now in my google drive i don't
+have<00:00:30.720><c> any</c><00:00:30.960><c> files</c><00:00:31.519><c> or</c><00:00:31.760><c> folders</c>
+
+00:00:32.630 --> 00:00:32.640 align:start position:0%
+have any files or folders
+ 
+
+00:00:32.640 --> 00:00:34.470 align:start position:0%
+have any files or folders
+i<00:00:32.880><c> want</c><00:00:33.040><c> to</c><00:00:33.200><c> create</c><00:00:33.520><c> a</c><00:00:33.520><c> couple</c><00:00:33.680><c> of</c><00:00:33.840><c> folders</c><00:00:34.320><c> in</c>
+
+00:00:34.470 --> 00:00:34.480 align:start position:0%
+i want to create a couple of folders in
+ 
+
+00:00:34.480 --> 00:00:36.389 align:start position:0%
+i want to create a couple of folders in
+my<00:00:35.040><c> google</c><00:00:35.360><c> drive</c>
+
+00:00:36.389 --> 00:00:36.399 align:start position:0%
+my google drive
+ 
+
+00:00:36.399 --> 00:00:38.869 align:start position:0%
+my google drive
+and<00:00:36.640><c> to</c><00:00:36.800><c> create</c><00:00:37.040><c> google</c><00:00:37.360><c> drive</c><00:00:37.600><c> folders</c><00:00:38.559><c> if</c><00:00:38.719><c> we</c>
+
+00:00:38.869 --> 00:00:38.879 align:start position:0%
+and to create google drive folders if we
+ 
+
+00:00:38.879 --> 00:00:40.869 align:start position:0%
+and to create google drive folders if we
+go<00:00:39.120><c> to</c><00:00:39.280><c> the</c><00:00:39.600><c> documentation</c>
+
+00:00:40.869 --> 00:00:40.879 align:start position:0%
+go to the documentation
+ 
+
+00:00:40.879 --> 00:00:43.750 align:start position:0%
+go to the documentation
+i'll<00:00:41.040><c> be</c><00:00:41.200><c> using</c><00:00:41.520><c> the</c><00:00:41.840><c> files</c><00:00:42.320><c> resource</c><00:00:43.440><c> and</c><00:00:43.600><c> the</c>
+
+00:00:43.750 --> 00:00:43.760 align:start position:0%
+i'll be using the files resource and the
+ 
+
+00:00:43.760 --> 00:00:45.029 align:start position:0%
+i'll be using the files resource and the
+maximum<00:00:44.239><c> file</c><00:00:44.559><c> size</c>
+
+00:00:45.029 --> 00:00:45.039 align:start position:0%
+maximum file size
+ 
+
+00:00:45.039 --> 00:00:48.549 align:start position:0%
+maximum file size
+is<00:00:46.280><c> 5120</c><00:00:47.360><c> gigabytes</c>
+
+00:00:48.549 --> 00:00:48.559 align:start position:0%
+is 5120 gigabytes
+ 
+
+00:00:48.559 --> 00:00:51.830 align:start position:0%
+is 5120 gigabytes
+fairly<00:00:49.360><c> your</c><00:00:49.680><c> file</c><00:00:50.000><c> will</c><00:00:50.160><c> exit</c><00:00:50.559><c> the</c><00:00:51.120><c> file</c><00:00:51.520><c> size</c>
+
+00:00:51.830 --> 00:00:51.840 align:start position:0%
+fairly your file will exit the file size
+ 
+
+00:00:51.840 --> 00:00:52.790 align:start position:0%
+fairly your file will exit the file size
+limit
+
+00:00:52.790 --> 00:00:52.800 align:start position:0%
+limit
+ 
+
+00:00:52.800 --> 00:00:54.630 align:start position:0%
+limit
+and<00:00:52.960><c> you</c><00:00:53.039><c> can</c><00:00:53.199><c> upload</c><00:00:53.520><c> just</c><00:00:53.760><c> about</c><00:00:54.000><c> any</c><00:00:54.399><c> type</c>
+
+00:00:54.630 --> 00:00:54.640 align:start position:0%
+and you can upload just about any type
+ 
+
+00:00:54.640 --> 00:00:56.790 align:start position:0%
+and you can upload just about any type
+of<00:00:54.879><c> files</c>
+
+00:00:56.790 --> 00:00:56.800 align:start position:0%
+of files
+ 
+
+00:00:56.800 --> 00:01:00.229 align:start position:0%
+of files
+if<00:00:56.960><c> we</c><00:00:57.120><c> scroll</c><00:00:57.440><c> down</c><00:00:57.680><c> to</c><00:00:57.920><c> the</c><00:00:58.160><c> parameters</c>
+
+00:01:00.229 --> 00:01:00.239 align:start position:0%
+if we scroll down to the parameters
+ 
+
+00:01:00.239 --> 00:01:01.910 align:start position:0%
+if we scroll down to the parameters
+and<00:01:00.480><c> these</c><00:01:00.719><c> are</c><00:01:00.800><c> the</c><00:01:01.039><c> parameters</c><00:01:01.680><c> that</c><00:01:01.840><c> you</c>
+
+00:01:01.910 --> 00:01:01.920 align:start position:0%
+and these are the parameters that you
+ 
+
+00:01:01.920 --> 00:01:03.349 align:start position:0%
+and these are the parameters that you
+can<00:01:02.079><c> provide</c>
+
+00:01:03.349 --> 00:01:03.359 align:start position:0%
+can provide
+ 
+
+00:01:03.359 --> 00:01:05.509 align:start position:0%
+can provide
+when<00:01:03.520><c> we</c><00:01:03.600><c> make</c><00:01:03.840><c> the</c><00:01:04.000><c> api</c><00:01:04.479><c> code</c><00:01:04.799><c> we</c><00:01:04.960><c> need</c><00:01:05.199><c> to</c>
+
+00:01:05.509 --> 00:01:05.519 align:start position:0%
+when we make the api code we need to
+ 
+
+00:01:05.519 --> 00:01:08.070 align:start position:0%
+when we make the api code we need to
+specify<00:01:06.240><c> the</c><00:01:06.479><c> upload</c><00:01:06.960><c> type</c>
+
+00:01:08.070 --> 00:01:08.080 align:start position:0%
+specify the upload type
+ 
+
+00:01:08.080 --> 00:01:10.870 align:start position:0%
+specify the upload type
+and<00:01:08.240><c> these</c><00:01:08.479><c> are</c><00:01:08.560><c> the</c><00:01:08.799><c> optional</c><00:01:09.360><c> parameters</c><00:01:10.640><c> we</c>
+
+00:01:10.870 --> 00:01:10.880 align:start position:0%
+and these are the optional parameters we
+ 
+
+00:01:10.880 --> 00:01:11.590 align:start position:0%
+and these are the optional parameters we
+can<00:01:11.200><c> uh</c>
+
+00:01:11.590 --> 00:01:11.600 align:start position:0%
+can uh
+ 
+
+00:01:11.600 --> 00:01:14.550 align:start position:0%
+can uh
+specify<00:01:12.400><c> with</c><00:01:12.640><c> an</c><00:01:12.799><c> iphone</c><00:01:13.280><c> to</c><00:01:13.520><c> enforce</c><00:01:14.400><c> a</c>
+
+00:01:14.550 --> 00:01:14.560 align:start position:0%
+specify with an iphone to enforce a
+ 
+
+00:01:14.560 --> 00:01:17.109 align:start position:0%
+specify with an iphone to enforce a
+folder<00:01:14.960><c> to</c><00:01:15.119><c> have</c><00:01:15.360><c> a</c><00:01:15.520><c> single</c><00:01:15.840><c> pm</c>
+
+00:01:17.109 --> 00:01:17.119 align:start position:0%
+folder to have a single pm
+ 
+
+00:01:17.119 --> 00:01:19.590 align:start position:0%
+folder to have a single pm
+or<00:01:17.360><c> do</c><00:01:17.439><c> you</c><00:01:17.520><c> want</c><00:01:17.759><c> to</c><00:01:18.000><c> set</c><00:01:18.159><c> the</c><00:01:18.320><c> folder</c><00:01:18.720><c> heading</c>
+
+00:01:19.590 --> 00:01:19.600 align:start position:0%
+or do you want to set the folder heading
+ 
+
+00:01:19.600 --> 00:01:21.429 align:start position:0%
+or do you want to set the folder heading
+it<00:01:19.759><c> will</c><00:01:19.840><c> cause</c><00:01:20.159><c> a</c><00:01:20.240><c> limit</c><00:01:20.560><c> if</c><00:01:20.720><c> want</c><00:01:21.040><c> to</c>
+
+00:01:21.429 --> 00:01:21.439 align:start position:0%
+it will cause a limit if want to
+ 
+
+00:01:21.439 --> 00:01:25.670 align:start position:0%
+it will cause a limit if want to
+keep<00:01:21.759><c> the</c><00:01:21.920><c> revision</c><00:01:22.720><c> forever</c>
+
+00:01:25.670 --> 00:01:25.680 align:start position:0%
+ 
+ 
+
+00:01:25.680 --> 00:01:27.910 align:start position:0%
+ 
+and<00:01:26.000><c> so</c><00:01:26.159><c> on</c><00:01:26.560><c> i'll</c><00:01:26.799><c> provide</c><00:01:27.119><c> the</c><00:01:27.280><c> link</c><00:01:27.680><c> in</c><00:01:27.759><c> the</c>
+
+00:01:27.910 --> 00:01:27.920 align:start position:0%
+and so on i'll provide the link in the
+ 
+
+00:01:27.920 --> 00:01:28.870 align:start position:0%
+and so on i'll provide the link in the
+description<00:01:28.479><c> below</c>
+
+00:01:28.870 --> 00:01:28.880 align:start position:0%
+description below
+ 
+
+00:01:28.880 --> 00:01:31.590 align:start position:0%
+description below
+so<00:01:29.040><c> you</c><00:01:29.119><c> can</c><00:01:29.200><c> go</c><00:01:29.439><c> to</c><00:01:29.600><c> the</c><00:01:29.759><c> inflation</c><00:01:30.159><c> area</c><00:01:31.360><c> and</c>
+
+00:01:31.590 --> 00:01:31.600 align:start position:0%
+so you can go to the inflation area and
+ 
+
+00:01:31.600 --> 00:01:34.390 align:start position:0%
+so you can go to the inflation area and
+if<00:01:31.680><c> we</c><00:01:32.000><c> go</c><00:01:32.240><c> down</c><00:01:32.560><c> to</c><00:01:32.799><c> the</c><00:01:32.960><c> request</c><00:01:33.360><c> body</c>
+
+00:01:34.390 --> 00:01:34.400 align:start position:0%
+if we go down to the request body
+ 
+
+00:01:34.400 --> 00:01:35.749 align:start position:0%
+if we go down to the request body
+and<00:01:34.479><c> these</c><00:01:34.720><c> are</c><00:01:34.880><c> all</c><00:01:35.040><c> the</c><00:01:35.119><c> metadata</c>
+
+00:01:35.749 --> 00:01:35.759 align:start position:0%
+and these are all the metadata
+ 
+
+00:01:35.759 --> 00:01:38.950 align:start position:0%
+and these are all the metadata
+information<00:01:36.159><c> that</c><00:01:36.320><c> you</c><00:01:36.400><c> can</c><00:01:36.560><c> provide</c>
+
+00:01:38.950 --> 00:01:38.960 align:start position:0%
+information that you can provide
+ 
+
+00:01:38.960 --> 00:01:41.590 align:start position:0%
+information that you can provide
+and<00:01:39.119><c> for</c><00:01:39.280><c> this</c><00:01:39.520><c> exercise</c><00:01:40.320><c> i'll</c><00:01:40.560><c> be</c><00:01:40.960><c> providing</c>
+
+00:01:41.590 --> 00:01:41.600 align:start position:0%
+and for this exercise i'll be providing
+ 
+
+00:01:41.600 --> 00:01:42.149 align:start position:0%
+and for this exercise i'll be providing
+the<00:01:41.840><c> my</c>
+
+00:01:42.149 --> 00:01:42.159 align:start position:0%
+the my
+ 
+
+00:01:42.159 --> 00:01:45.030 align:start position:0%
+the my
+type<00:01:42.720><c> and</c><00:01:42.960><c> the</c><00:01:43.200><c> name</c><00:01:43.840><c> just</c><00:01:44.079><c> these</c><00:01:44.320><c> two</c><00:01:44.560><c> fields</c>
+
+00:01:45.030 --> 00:01:45.040 align:start position:0%
+type and the name just these two fields
+ 
+
+00:01:45.040 --> 00:01:46.950 align:start position:0%
+type and the name just these two fields
+in<00:01:45.119><c> this</c><00:01:45.439><c> exercise</c>
+
+00:01:46.950 --> 00:01:46.960 align:start position:0%
+in this exercise
+ 
+
+00:01:46.960 --> 00:01:49.990 align:start position:0%
+in this exercise
+if<00:01:47.119><c> we</c><00:01:47.280><c> go</c><00:01:47.520><c> to</c><00:01:47.840><c> the</c><00:01:48.240><c> g</c><00:01:48.479><c> suite</c><00:01:48.880><c> and</c><00:01:49.200><c> drive</c><00:01:49.680><c> my</c>
+
+00:01:49.990 --> 00:01:50.000 align:start position:0%
+if we go to the g suite and drive my
+ 
+
+00:01:50.000 --> 00:01:50.710 align:start position:0%
+if we go to the g suite and drive my
+types
+
+00:01:50.710 --> 00:01:50.720 align:start position:0%
+types
+ 
+
+00:01:50.720 --> 00:01:52.710 align:start position:0%
+types
+when<00:01:50.880><c> we</c><00:01:51.040><c> create</c><00:01:51.280><c> google</c><00:01:51.600><c> drive</c><00:01:51.840><c> folders</c><00:01:52.560><c> we</c>
+
+00:01:52.710 --> 00:01:52.720 align:start position:0%
+when we create google drive folders we
+ 
+
+00:01:52.720 --> 00:01:55.590 align:start position:0%
+when we create google drive folders we
+need<00:01:52.960><c> to</c><00:01:53.680><c> specify</c><00:01:54.399><c> the</c><00:01:54.560><c> my</c><00:01:54.799><c> type</c>
+
+00:01:55.590 --> 00:01:55.600 align:start position:0%
+need to specify the my type
+ 
+
+00:01:55.600 --> 00:01:57.429 align:start position:0%
+need to specify the my type
+and<00:01:55.840><c> for</c><00:01:56.079><c> google</c><00:01:56.399><c> drive</c><00:01:56.640><c> folder</c><00:01:57.040><c> it'll</c><00:01:57.280><c> be</c>
+
+00:01:57.429 --> 00:01:57.439 align:start position:0%
+and for google drive folder it'll be
+ 
+
+00:01:57.439 --> 00:01:59.870 align:start position:0%
+and for google drive folder it'll be
+this<00:01:57.600><c> one</c><00:01:57.759><c> right</c><00:01:57.920><c> here</c>
+
+00:01:59.870 --> 00:01:59.880 align:start position:0%
+this one right here
+ 
+
+00:01:59.880 --> 00:02:02.230 align:start position:0%
+this one right here
+vnd.googleapps.folder<00:02:01.600><c> and</c><00:02:01.759><c> that's</c><00:02:02.000><c> all</c><00:02:02.079><c> the</c>
+
+00:02:02.230 --> 00:02:02.240 align:start position:0%
+vnd.googleapps.folder and that's all the
+ 
+
+00:02:02.240 --> 00:02:03.990 align:start position:0%
+vnd.googleapps.folder and that's all the
+informations<00:02:02.880><c> i</c><00:02:02.960><c> want</c><00:02:03.119><c> to</c><00:02:03.200><c> cover</c>
+
+00:02:03.990 --> 00:02:04.000 align:start position:0%
+informations i want to cover
+ 
+
+00:02:04.000 --> 00:02:06.709 align:start position:0%
+informations i want to cover
+let<00:02:04.159><c> me</c><00:02:04.320><c> go</c><00:02:04.479><c> to</c><00:02:04.640><c> my</c><00:02:04.880><c> python</c><00:02:05.360><c> editor</c><00:02:06.240><c> here</c><00:02:06.560><c> the</c>
+
+00:02:06.709 --> 00:02:06.719 align:start position:0%
+let me go to my python editor here the
+ 
+
+00:02:06.719 --> 00:02:08.790 align:start position:0%
+let me go to my python editor here the
+code<00:02:07.040><c> to</c><00:02:07.280><c> create</c><00:02:07.680><c> google</c><00:02:07.920><c> drive</c><00:02:08.239><c> api</c>
+
+00:02:08.790 --> 00:02:08.800 align:start position:0%
+code to create google drive api
+ 
+
+00:02:08.800 --> 00:02:11.430 align:start position:0%
+code to create google drive api
+service<00:02:09.280><c> instance</c><00:02:10.319><c> i</c><00:02:10.560><c> also</c><00:02:10.800><c> have</c><00:02:10.959><c> a</c><00:02:11.120><c> less</c>
+
+00:02:11.430 --> 00:02:11.440 align:start position:0%
+service instance i also have a less
+ 
+
+00:02:11.440 --> 00:02:13.990 align:start position:0%
+service instance i also have a less
+object<00:02:11.920><c> i</c><00:02:12.000><c> named</c><00:02:12.319><c> software</c><00:02:12.879><c> national</c><00:02:13.360><c> parks</c>
+
+00:02:13.990 --> 00:02:14.000 align:start position:0%
+object i named software national parks
+ 
+
+00:02:14.000 --> 00:02:16.070 align:start position:0%
+object i named software national parks
+i<00:02:14.160><c> want</c><00:02:14.319><c> to</c><00:02:14.480><c> create</c><00:02:14.800><c> three</c><00:02:15.040><c> different</c><00:02:15.440><c> folders</c>
+
+00:02:16.070 --> 00:02:16.080 align:start position:0%
+i want to create three different folders
+ 
+
+00:02:16.080 --> 00:02:17.990 align:start position:0%
+i want to create three different folders
+in<00:02:16.239><c> each</c><00:02:16.480><c> folder</c><00:02:16.800><c> will</c><00:02:17.040><c> represent</c><00:02:17.520><c> a</c><00:02:17.599><c> national</c>
+
+00:02:17.990 --> 00:02:18.000 align:start position:0%
+in each folder will represent a national
+ 
+
+00:02:18.000 --> 00:02:18.949 align:start position:0%
+in each folder will represent a national
+park
+
+00:02:18.949 --> 00:02:18.959 align:start position:0%
+park
+ 
+
+00:02:18.959 --> 00:02:20.949 align:start position:0%
+park
+and<00:02:19.280><c> to</c><00:02:19.440><c> create</c><00:02:19.680><c> the</c><00:02:19.840><c> folders</c><00:02:20.400><c> i'm</c><00:02:20.560><c> going</c><00:02:20.800><c> to</c>
+
+00:02:20.949 --> 00:02:20.959 align:start position:0%
+and to create the folders i'm going to
+ 
+
+00:02:20.959 --> 00:02:21.990 align:start position:0%
+and to create the folders i'm going to
+insert<00:02:21.360><c> loop</c>
+
+00:02:21.990 --> 00:02:22.000 align:start position:0%
+insert loop
+ 
+
+00:02:22.000 --> 00:02:25.350 align:start position:0%
+insert loop
+i'm<00:02:22.239><c> going</c><00:02:22.400><c> to</c><00:02:22.560><c> say</c><00:02:22.720><c> that</c><00:02:23.520><c> for</c><00:02:23.760><c> national</c><00:02:24.239><c> park</c>
+
+00:02:25.350 --> 00:02:25.360 align:start position:0%
+i'm going to say that for national park
+ 
+
+00:02:25.360 --> 00:02:29.350 align:start position:0%
+i'm going to say that for national park
+in<00:02:25.599><c> national</c><00:02:26.080><c> parks</c><00:02:27.840><c> oops</c>
+
+00:02:29.350 --> 00:02:29.360 align:start position:0%
+in national parks oops
+ 
+
+00:02:29.360 --> 00:02:30.710 align:start position:0%
+in national parks oops
+i<00:02:29.520><c> want</c><00:02:29.680><c> to</c><00:02:29.920><c> first</c><00:02:30.160><c> of</c><00:02:30.239><c> all</c><00:02:30.400><c> create</c><00:02:30.640><c> a</c>
+
+00:02:30.710 --> 00:02:30.720 align:start position:0%
+i want to first of all create a
+ 
+
+00:02:30.720 --> 00:02:32.550 align:start position:0%
+i want to first of all create a
+dictionary<00:02:31.280><c> to</c><00:02:31.440><c> store</c><00:02:31.760><c> the</c><00:02:31.920><c> metadata</c>
+
+00:02:32.550 --> 00:02:32.560 align:start position:0%
+dictionary to store the metadata
+ 
+
+00:02:32.560 --> 00:02:33.589 align:start position:0%
+dictionary to store the metadata
+information
+
+00:02:33.589 --> 00:02:33.599 align:start position:0%
+information
+ 
+
+00:02:33.599 --> 00:02:35.509 align:start position:0%
+information
+and<00:02:33.680><c> i'll</c><00:02:33.840><c> name</c><00:02:34.080><c> this</c><00:02:34.239><c> dictionary</c><00:02:35.040><c> file</c>
+
+00:02:35.509 --> 00:02:35.519 align:start position:0%
+and i'll name this dictionary file
+ 
+
+00:02:35.519 --> 00:02:39.190 align:start position:0%
+and i'll name this dictionary file
+metadata
+
+00:02:39.190 --> 00:02:39.200 align:start position:0%
+ 
+ 
+
+00:02:39.200 --> 00:02:44.070 align:start position:0%
+ 
+i'll<00:02:39.440><c> provide</c><00:02:39.840><c> the</c><00:02:39.920><c> name</c>
+
+00:02:44.070 --> 00:02:44.080 align:start position:0%
+ 
+ 
+
+00:02:44.080 --> 00:02:47.750 align:start position:0%
+ 
+in<00:02:44.239><c> the</c><00:02:44.400><c> my</c><00:02:44.720><c> type</c><00:02:46.560><c> and</c><00:02:46.800><c> for</c><00:02:46.959><c> the</c><00:02:47.040><c> my</c><00:02:47.360><c> time</c><00:02:47.599><c> let</c>
+
+00:02:47.750 --> 00:02:47.760 align:start position:0%
+in the my type and for the my time let
+ 
+
+00:02:47.760 --> 00:02:48.830 align:start position:0%
+in the my type and for the my time let
+me<00:02:47.840><c> go</c><00:02:48.000><c> back</c><00:02:48.319><c> to</c>
+
+00:02:48.830 --> 00:02:48.840 align:start position:0%
+me go back to
+ 
+
+00:02:48.840 --> 00:02:52.869 align:start position:0%
+me go back to
+the<00:02:49.760><c> documentation</c><00:02:51.360><c> and</c><00:02:51.519><c> i'll</c><00:02:51.680><c> just</c><00:02:51.840><c> copy</c>
+
+00:02:52.869 --> 00:02:52.879 align:start position:0%
+the documentation and i'll just copy
+ 
+
+00:02:52.879 --> 00:02:56.949 align:start position:0%
+the documentation and i'll just copy
+this<00:02:53.200><c> text</c><00:02:53.519><c> right</c><00:02:53.680><c> here</c>
+
+00:02:56.949 --> 00:02:56.959 align:start position:0%
+ 
+ 
+
+00:02:56.959 --> 00:03:01.030 align:start position:0%
+ 
+and<00:02:57.200><c> paste</c><00:02:59.519><c> in</c><00:02:59.680><c> case</c><00:03:00.000><c> if</c><00:03:00.159><c> you</c><00:03:00.239><c> are</c><00:03:00.400><c> creating</c><00:03:00.800><c> a</c>
+
+00:03:01.030 --> 00:03:01.040 align:start position:0%
+and paste in case if you are creating a
+ 
+
+00:03:01.040 --> 00:03:01.830 align:start position:0%
+and paste in case if you are creating a
+folders
+
+00:03:01.830 --> 00:03:01.840 align:start position:0%
+folders
+ 
+
+00:03:01.840 --> 00:03:04.869 align:start position:0%
+folders
+on<00:03:02.080><c> the</c><00:03:02.400><c> different</c><00:03:02.879><c> folder</c><00:03:04.159><c> then</c><00:03:04.319><c> we</c><00:03:04.480><c> need</c><00:03:04.640><c> to</c>
+
+00:03:04.869 --> 00:03:04.879 align:start position:0%
+on the different folder then we need to
+ 
+
+00:03:04.879 --> 00:03:06.869 align:start position:0%
+on the different folder then we need to
+provide<00:03:05.200><c> the</c><00:03:05.440><c> appearance</c><00:03:06.000><c> parameter</c>
+
+00:03:06.869 --> 00:03:06.879 align:start position:0%
+provide the appearance parameter
+ 
+
+00:03:06.879 --> 00:03:08.869 align:start position:0%
+provide the appearance parameter
+and<00:03:07.040><c> it's</c><00:03:07.120><c> going</c><00:03:07.280><c> to</c><00:03:07.280><c> be</c><00:03:07.519><c> list</c><00:03:08.159><c> is</c><00:03:08.480><c> need</c><00:03:08.720><c> to</c>
+
+00:03:08.869 --> 00:03:08.879 align:start position:0%
+and it's going to be list is need to
+ 
+
+00:03:08.879 --> 00:03:10.070 align:start position:0%
+and it's going to be list is need to
+insert<00:03:09.200><c> the</c><00:03:09.360><c> folder</c><00:03:09.680><c> id</c>
+
+00:03:10.070 --> 00:03:10.080 align:start position:0%
+insert the folder id
+ 
+
+00:03:10.080 --> 00:03:12.309 align:start position:0%
+insert the folder id
+inside<00:03:10.400><c> this</c><00:03:10.640><c> list</c><00:03:11.280><c> and</c><00:03:11.360><c> that'll</c><00:03:11.680><c> create</c><00:03:12.159><c> the</c>
+
+00:03:12.309 --> 00:03:12.319 align:start position:0%
+inside this list and that'll create the
+ 
+
+00:03:12.319 --> 00:03:14.710 align:start position:0%
+inside this list and that'll create the
+folders<00:03:12.800><c> inside</c><00:03:13.040><c> a</c><00:03:13.120><c> different</c><00:03:13.519><c> style</c><00:03:13.760><c> folder</c>
+
+00:03:14.710 --> 00:03:14.720 align:start position:0%
+folders inside a different style folder
+ 
+
+00:03:14.720 --> 00:03:16.949 align:start position:0%
+folders inside a different style folder
+and<00:03:14.959><c> since</c><00:03:15.200><c> i'm</c><00:03:15.519><c> actually</c><00:03:16.080><c> just</c><00:03:16.400><c> creating</c>
+
+00:03:16.949 --> 00:03:16.959 align:start position:0%
+and since i'm actually just creating
+ 
+
+00:03:16.959 --> 00:03:17.990 align:start position:0%
+and since i'm actually just creating
+folders<00:03:17.440><c> in</c><00:03:17.599><c> my</c>
+
+00:03:17.990 --> 00:03:18.000 align:start position:0%
+folders in my
+ 
+
+00:03:18.000 --> 00:03:20.470 align:start position:0%
+folders in my
+root<00:03:18.239><c> drive</c><00:03:18.959><c> which</c><00:03:19.280><c> is</c><00:03:19.360><c> going</c><00:03:19.519><c> to</c><00:03:19.599><c> be</c><00:03:19.840><c> under</c><00:03:20.239><c> my</c>
+
+00:03:20.470 --> 00:03:20.480 align:start position:0%
+root drive which is going to be under my
+ 
+
+00:03:20.480 --> 00:03:22.309 align:start position:0%
+root drive which is going to be under my
+drive<00:03:20.800><c> folder</c>
+
+00:03:22.309 --> 00:03:22.319 align:start position:0%
+drive folder
+ 
+
+00:03:22.319 --> 00:03:23.910 align:start position:0%
+drive folder
+and<00:03:22.480><c> you'll</c><00:03:22.640><c> need</c><00:03:22.879><c> to</c><00:03:23.120><c> provide</c><00:03:23.599><c> the</c>
+
+00:03:23.910 --> 00:03:23.920 align:start position:0%
+and you'll need to provide the
+ 
+
+00:03:23.920 --> 00:03:27.350 align:start position:0%
+and you'll need to provide the
+appearance<00:03:24.720><c> parameter</c>
+
+00:03:27.350 --> 00:03:27.360 align:start position:0%
+ 
+ 
+
+00:03:27.360 --> 00:03:29.030 align:start position:0%
+ 
+here<00:03:27.519><c> i'm</c><00:03:27.680><c> going</c><00:03:27.840><c> to</c><00:03:28.000><c> insert</c><00:03:28.400><c> a</c><00:03:28.560><c> service</c>
+
+00:03:29.030 --> 00:03:29.040 align:start position:0%
+here i'm going to insert a service
+ 
+
+00:03:29.040 --> 00:03:31.110 align:start position:0%
+here i'm going to insert a service
+object<00:03:29.680><c> that</c><00:03:30.000><c> files</c>
+
+00:03:31.110 --> 00:03:31.120 align:start position:0%
+object that files
+ 
+
+00:03:31.120 --> 00:03:33.830 align:start position:0%
+object that files
+that<00:03:31.440><c> create</c><00:03:32.640><c> and</c><00:03:32.799><c> we</c><00:03:32.959><c> need</c><00:03:33.120><c> to</c><00:03:33.280><c> provide</c><00:03:33.680><c> is</c>
+
+00:03:33.830 --> 00:03:33.840 align:start position:0%
+that create and we need to provide is
+ 
+
+00:03:33.840 --> 00:03:34.229 align:start position:0%
+that create and we need to provide is
+the
+
+00:03:34.229 --> 00:03:34.239 align:start position:0%
+the
+ 
+
+00:03:34.239 --> 00:03:36.470 align:start position:0%
+the
+file<00:03:34.480><c> metadata</c><00:03:35.120><c> object</c><00:03:35.599><c> to</c><00:03:35.840><c> the</c><00:03:36.080><c> body</c>
+
+00:03:36.470 --> 00:03:36.480 align:start position:0%
+file metadata object to the body
+ 
+
+00:03:36.480 --> 00:03:41.830 align:start position:0%
+file metadata object to the body
+parameter
+
+00:03:41.830 --> 00:03:41.840 align:start position:0%
+ 
+ 
+
+00:03:41.840 --> 00:03:45.350 align:start position:0%
+ 
+that<00:03:42.080><c> has</c><00:03:42.319><c> the</c><00:03:42.480><c> queue</c><00:03:44.000><c> and</c><00:03:44.239><c> that's</c><00:03:44.480><c> it</c>
+
+00:03:45.350 --> 00:03:45.360 align:start position:0%
+that has the queue and that's it
+ 
+
+00:03:45.360 --> 00:03:51.190 align:start position:0%
+that has the queue and that's it
+now<00:03:45.519><c> if</c><00:03:45.680><c> i</c><00:03:45.760><c> run</c><00:03:46.000><c> the</c><00:03:46.080><c> script</c>
+
+00:03:51.190 --> 00:03:51.200 align:start position:0%
+ 
+ 
+
+00:03:51.200 --> 00:03:53.910 align:start position:0%
+ 
+if<00:03:51.360><c> i</c><00:03:51.519><c> go</c><00:03:51.680><c> back</c><00:03:51.920><c> to</c><00:03:52.000><c> my</c><00:03:52.239><c> google</c><00:03:52.560><c> drive</c><00:03:53.519><c> and</c><00:03:53.680><c> here</c>
+
+00:03:53.910 --> 00:03:53.920 align:start position:0%
+if i go back to my google drive and here
+ 
+
+00:03:53.920 --> 00:03:55.830 align:start position:0%
+if i go back to my google drive and here
+are<00:03:54.000><c> the</c><00:03:54.159><c> three</c><00:03:54.400><c> folders</c><00:03:54.879><c> created</c><00:03:55.360><c> using</c><00:03:55.680><c> the</c>
+
+00:03:55.830 --> 00:03:55.840 align:start position:0%
+are the three folders created using the
+ 
+
+00:03:55.840 --> 00:03:57.350 align:start position:0%
+are the three folders created using the
+python<00:03:56.239><c> script</c>
+
+00:03:57.350 --> 00:03:57.360 align:start position:0%
+python script
+ 
+
+00:03:57.360 --> 00:03:58.949 align:start position:0%
+python script
+this<00:03:57.599><c> is</c><00:03:57.760><c> everything</c><00:03:58.159><c> i</c><00:03:58.239><c> want</c><00:03:58.319><c> to</c><00:03:58.480><c> share</c><00:03:58.799><c> in</c>
+
+00:03:58.949 --> 00:03:58.959 align:start position:0%
+this is everything i want to share in
+ 
+
+00:03:58.959 --> 00:04:00.789 align:start position:0%
+this is everything i want to share in
+this<00:03:59.120><c> video</c><00:03:59.760><c> and</c><00:03:59.920><c> hopefully</c><00:04:00.239><c> you</c><00:04:00.319><c> guys</c><00:04:00.560><c> found</c>
+
+00:04:00.789 --> 00:04:00.799 align:start position:0%
+this video and hopefully you guys found
+ 
+
+00:04:00.799 --> 00:04:02.149 align:start position:0%
+this video and hopefully you guys found
+the<00:04:00.959><c> video</c><00:04:01.280><c> useful</c>
+
+00:04:02.149 --> 00:04:02.159 align:start position:0%
+the video useful
+ 
+
+00:04:02.159 --> 00:04:04.550 align:start position:0%
+the video useful
+and<00:04:02.400><c> as</c><00:04:02.560><c> always</c><00:04:03.120><c> see</c><00:04:03.280><c> you</c><00:04:03.439><c> guys</c><00:04:03.680><c> watching</c><00:04:04.400><c> i'll</c>
+
+00:04:04.550 --> 00:04:04.560 align:start position:0%
+and as always see you guys watching i'll
+ 
+
+00:04:04.560 --> 00:04:09.280 align:start position:0%
+and as always see you guys watching i'll
+see<00:04:04.720><c> you</c><00:04:04.799><c> guys</c><00:04:05.120><c> on</c><00:04:05.280><c> the</c><00:04:05.360><c> next</c><00:04:06.280><c> video</c>
+
