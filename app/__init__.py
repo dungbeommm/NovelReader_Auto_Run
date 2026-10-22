@@ -1,0 +1,1 @@
+"""NovelReader Auto Run application."""

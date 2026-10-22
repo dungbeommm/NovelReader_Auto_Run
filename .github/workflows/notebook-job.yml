@@ -1,0 +1,38 @@
+name: Dispatch MoLab job request
+
+on:
+  repository_dispatch:
+    types: [novelreader_job]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  acknowledge:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate dispatch payload
+        env:
+          JOB_ID: ${{ github.event.client_payload.job_id }}
+          DRIVE_FOLDER_ID: ${{ github.event.client_payload.drive_folder_id }}
+          NOTEBOOK_URL: ${{ vars.MOLAB_NOTEBOOK_URL }}
+        run: |
+          python - <<'PY'
+          import os
+          import uuid
+          from urllib.parse import urlparse
+          job_id = os.environ.get("JOB_ID", "")
+          if job_id:
+              uuid.UUID(job_id)
+          notebook = os.environ.get("NOTEBOOK_URL", "https://molab.marimo.io/notebooks/nb_jto8ABNt6hR63odUKU4UuJ")
+          parsed = urlparse(notebook)
+          if parsed.scheme != "https" or parsed.hostname != "molab.marimo.io":
+              raise SystemExit("MOLAB_NOTEBOOK_URL must point to molab.marimo.io over HTTPS")
+          if not os.environ.get("DRIVE_FOLDER_ID"):
+              raise SystemExit("Missing Drive job folder id")
+          print(f"Request accepted for job={job_id}; notebook worker must be active at {notebook}")
+          PY
+

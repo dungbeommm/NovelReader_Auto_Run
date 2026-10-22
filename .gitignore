@@ -1,0 +1,13 @@
+.env
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+*.epub
+*.sqlite3*
+output/
+secrets/
+.mcp-windows-src/
+quy_trinh_v2_tham_khao_NovelReader_Molab.md
+

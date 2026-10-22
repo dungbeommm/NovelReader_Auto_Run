@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/novelreader/job.schema.json",
+  "title": "NovelReader job manifest",
+  "type": "object",
+  "required": ["schema_version", "job_id", "owner_id", "created_at", "status", "input", "config", "progress"],
+  "properties": {
+    "schema_version": {"const": 1},
+    "job_id": {"type": "string", "format": "uuid"},
+    "owner_id": {"type": "string"},
+    "created_at": {"type": "string", "format": "date-time"},
+    "status": {"enum": ["CONFIGURING", "QUEUED", "RUNNING", "PAUSED", "UPLOADING", "COMPLETED", "COMPLETED_WITH_ERRORS", "FAILED"]},
+    "input": {"type": "object", "required": ["drive_file_id", "name", "sha256", "size"], "properties": {"drive_file_id": {"type": "string"}, "name": {"type": "string"}, "sha256": {"type": "string"}, "size": {"type": "integer"}}, "additionalProperties": false},
+    "config": {"type": "object"},
+    "progress": {"type": "object", "properties": {"total_chapters": {"type": "integer"}, "done_chapters": {"type": "integer"}, "failed_chapters": {"type": "integer"}, "last_chapter": {"type": ["integer", "null"]}}, "additionalProperties": false},
+    "result": {"type": ["object", "null"]},
+    "errors": {"type": "array", "items": {"type": "object"}},
+    "updated_at": {"type": "string", "format": "date-time"}
+  },
+  "additionalProperties": false
+}
