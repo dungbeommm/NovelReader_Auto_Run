@@ -75,6 +75,13 @@ class ConfigContractTests(unittest.TestCase):
         self.assertEqual((method, url),
                          ("PUT", "https://pixeldrain.com/api/filesystem/me/jobs/example/job.json"))
 
+    def test_pixeldrain_forbidden_explains_filesystem_requirement(self):
+        store = PixeldrainStore("test-key")
+        response = Mock(status_code=403)
+        store.session.request = Mock(return_value=response)
+        with self.assertRaisesRegex(RuntimeError, "Pro/Prepaid"):
+            store.stat("/me")
+
 
 if __name__ == "__main__":
     unittest.main()

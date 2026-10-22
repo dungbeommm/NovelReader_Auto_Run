@@ -37,6 +37,11 @@ class PixeldrainStore:
 
     def _request(self, method: str, path: str, **kwargs):
         response = self.session.request(method, self._url(path), timeout=(20, 300), **kwargs)
+        if response.status_code == 403:
+            raise RuntimeError(
+                "Pixeldrain Filesystem access denied (HTTP 403). "
+                "The account must have a Pro/Prepaid subscription and the API key must belong to that account."
+            )
         response.raise_for_status()
         return response
 
