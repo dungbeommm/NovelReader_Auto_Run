@@ -4,6 +4,15 @@ on:
   repository_dispatch:
     types: [novelreader_job]
   workflow_dispatch:
+    inputs:
+      job_id:
+        description: Optional job UUID for validating a queued job
+        required: false
+        type: string
+      drive_folder_id:
+        description: Drive folder id for the job
+        required: false
+        type: string
 
 permissions:
   contents: read
@@ -16,23 +25,31 @@ jobs:
       - uses: actions/checkout@v4
       - name: Validate dispatch payload
         env:
-          JOB_ID: ${{ github.event.client_payload.job_id }}
-          DRIVE_FOLDER_ID: ${{ github.event.client_payload.drive_folder_id }}
+          EVENT_NAME: ${{ github.event_name }}
+          JOB_ID: ${{ github.event.client_payload.job_id || inputs.job_id }}
+          DRIVE_FOLDER_ID: ${{ github.event.client_payload.drive_folder_id || inputs.drive_folder_id }}
           NOTEBOOK_URL: ${{ vars.MOLAB_NOTEBOOK_URL }}
         run: |
           python - <<'PY'
           import os
           import uuid
           from urllib.parse import urlparse
+          event = os.environ.get("EVENT_NAME", "")
           job_id = os.environ.get("JOB_ID", "")
+          folder_id = os.environ.get("DRIVE_FOLDER_ID", "")
+          if event == "repository_dispatch" and (not job_id or not folder_id):
+              raise SystemExit("Repository dispatch requires both job_id and drive_folder_id")
           if job_id:
               uuid.UUID(job_id)
+          if bool(job_id) != bool(folder_id):
+              raise SystemExit("Provide both job_id and drive_folder_id, or leave both empty for a health check")
           notebook = os.environ.get("NOTEBOOK_URL", "https://molab.marimo.io/notebooks/nb_jto8ABNt6hR63odUKU4UuJ")
           parsed = urlparse(notebook)
           if parsed.scheme != "https" or parsed.hostname != "molab.marimo.io":
               raise SystemExit("MOLAB_NOTEBOOK_URL must point to molab.marimo.io over HTTPS")
-          if not os.environ.get("DRIVE_FOLDER_ID"):
-              raise SystemExit("Missing Drive job folder id")
-          print(f"Request accepted for job={job_id}; notebook worker must be active at {notebook}")
+          if job_id:
+              print(f"Request accepted for job={job_id}; notebook worker must be active at {notebook}")
+          else:
+              print(f"Health check passed; no job payload supplied. Notebook URL: {notebook}")
           PY
 
