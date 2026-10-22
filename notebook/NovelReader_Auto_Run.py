@@ -33,6 +33,8 @@ def _():
 @app.cell
 def _(google_api_ready, mo):
     import hashlib
+    import base64
+    import binascii
     import json
     import logging
     import os
@@ -69,10 +71,21 @@ def _(google_api_ready, mo):
         raw = os.environ.get("GDRIVE_OAUTH_TOKEN_JSON", "")
         if not raw:
             raise RuntimeError("Thiếu GDRIVE_OAUTH_TOKEN_JSON trong biến môi trường MoLab.")
+        value = raw.strip()
+        if value.startswith("```") and value.endswith("```"):
+            value = value.removeprefix("```").removesuffix("```").strip()
+            if value.lower().startswith("json"):
+                value = value[4:].lstrip()
         try:
-            info = json.loads(raw)
-        except json.JSONDecodeError as exc:
-            raise RuntimeError("GDRIVE_OAUTH_TOKEN_JSON phải là nội dung JSON credentials, không phải API key hoặc đường dẫn file.") from exc
+            info = json.loads(value)
+            if isinstance(info, str):
+                info = json.loads(info)
+        except json.JSONDecodeError:
+            try:
+                decoded = base64.b64decode(value + "=" * (-len(value) % 4), validate=True).decode("utf-8-sig")
+                info = json.loads(decoded)
+            except (binascii.Error, UnicodeDecodeError, json.JSONDecodeError) as exc:
+                raise RuntimeError("GDRIVE_OAUTH_TOKEN_JSON must be raw Google credential JSON or Base64-encoded JSON; API keys, file paths, and OAuth client-only credentials.json files cannot access Drive.") from exc
         if not isinstance(info, dict):
             raise RuntimeError("GDRIVE_OAUTH_TOKEN_JSON phải là một JSON object.")
         try:

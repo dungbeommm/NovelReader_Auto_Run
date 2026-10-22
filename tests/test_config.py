@@ -1,4 +1,5 @@
 import json
+import base64
 import unittest
 from pathlib import Path
 
@@ -50,6 +51,31 @@ class ConfigContractTests(unittest.TestCase):
     def test_unrecognized_drive_json_reports_auth_options(self):
         with self.assertRaisesRegex(RuntimeError, "authorized-user token or service-account"):
             credentials_from_json('{"installed": {"client_id": "example"}}')
+
+    def test_drive_credentials_accept_base64_encoded_authorized_user_json(self):
+        payload = json.dumps({
+            "type": "authorized_user",
+            "client_id": "client-id",
+            "client_secret": "client-secret",
+            "refresh_token": "refresh-token",
+            "token": "access-token",
+            "token_uri": "https://oauth2.googleapis.com/token",
+        })
+        encoded = base64.b64encode(payload.encode("utf-8")).decode("ascii")
+        credentials = credentials_from_json(encoded)
+        self.assertEqual(credentials.refresh_token, "refresh-token")
+
+    def test_drive_credentials_accept_markdown_fenced_json(self):
+        payload = json.dumps({
+            "type": "authorized_user",
+            "client_id": "client-id",
+            "client_secret": "client-secret",
+            "refresh_token": "refresh-token",
+            "token": "access-token",
+            "token_uri": "https://oauth2.googleapis.com/token",
+        })
+        credentials = credentials_from_json(f"```json\n{payload}\n```")
+        self.assertEqual(credentials.refresh_token, "refresh-token")
 
     def test_drive_listing_follows_all_pages(self):
         class Request:

@@ -8,7 +8,7 @@ Secrets:
 
 - `TELEGRAM_BOT_TOKEN`
 - `ALLOWED_TELEGRAM_USER_IDS` — ID số Telegram, phân cách dấu phẩy
-- `GDRIVE_OAUTH_TOKEN_JSON` — OAuth authorized-user JSON có refresh token, hoặc service-account JSON hợp lệ
+- `GDRIVE_OAUTH_TOKEN_JSON` — OAuth authorized-user JSON có refresh token, hoặc service-account JSON hợp lệ; có thể lưu JSON thô hoặc Base64 của JSON
 - `GH_DISPATCH_TOKEN` — fine-grained token có quyền repository `Contents: write` để gọi repository dispatch
 
 Variables:
@@ -16,7 +16,7 @@ Variables:
 - `GDRIVE_ROOT_FOLDER_ID` — tùy chọn; mặc định Drive root
 - `MOLAB_NOTEBOOK_URL` — dùng URL notebook ở trên
 
-Trong runtime MoLab, cấu hình cùng `GDRIVE_OAUTH_TOKEN_JSON` dưới dạng secret/biến môi trường. Nếu dùng service account, chia sẻ thư mục Drive đích cho địa chỉ `client_email` của service account. Giữ notebook worker chạy để nhận job; GitHub Actions poll Telegram theo lịch 5 phút/lượt. Runner không duy trì bot online liên tục.
+Trong runtime MoLab, cấu hình cùng `GDRIVE_OAUTH_TOKEN_JSON` dưới dạng secret/biến môi trường. Nếu dùng service account, chia sẻ thư mục Drive đích cho địa chỉ `client_email` của service account. JSON `credentials.json` chỉ có `installed`/`web` OAuth client là chưa đủ; cần token đã cấp quyền và có `refresh_token`. Giữ notebook worker chạy để nhận job; GitHub Actions poll Telegram theo lịch 5 phút/lượt. Runner không duy trì bot online liên tục.
 
 ## Telegram
 
@@ -28,4 +28,4 @@ Drive mặc định riêng tư. Chỉ chọn `drive.sharing=link_reader` nếu m
 
 ## Phạm vi còn thiếu
 
-Workflow `notebook-job.yml` xác nhận yêu cầu dispatch; nó chưa tự đăng nhập, mở hoặc bấm Run trong giao diện MoLab. Notebook tự quét Drive khi phiên đã được khởi chạy. Chưa xác minh khởi chạy/đánh thức phiên MoLab từ Actions, dừng compute tự động, catalog model/voice động hoặc chạy một EPUB thật end-to-end. Cần kiểm tra các phần này trước khi vận hành job thật.
+Một workflow duy nhất `.github/workflows/novelreader.yml` chạy CI, poll Telegram theo lịch và xác thực yêu cầu dispatch. Chế độ `workflow_dispatch` có `health-check` và `poll-telegram`. Workflow không đăng nhập hoặc bấm Run trong giao diện MoLab; notebook worker vẫn cần được khởi chạy trong MoLab và giữ phiên hoạt động để xử lý job.

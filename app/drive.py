@@ -2,6 +2,8 @@
 from __future__ import annotations
 
 import json
+import base64
+import binascii
 import os
 from pathlib import Path
 from typing import Any
@@ -16,13 +18,27 @@ SCOPE = "https://www.googleapis.com/auth/drive"
 
 
 def credentials_from_json(raw: str):
+    value = raw.strip()
+    if value.startswith("```") and value.endswith("```"):
+        value = value.removeprefix("```").removesuffix("```").strip()
+        if value.lower().startswith("json"):
+            value = value[4:].lstrip()
+
     try:
-        info = json.loads(raw)
-    except json.JSONDecodeError as exc:
-        raise RuntimeError(
-            "GDRIVE_OAUTH_TOKEN_JSON must contain raw Google credential JSON, not a path or an API key. "
-            "Use an authorized-user token JSON with refresh_token, or a service-account JSON."
-        ) from exc
+        info = json.loads(value)
+        if isinstance(info, str):
+            info = json.loads(info)
+    except json.JSONDecodeError:
+        # GitHub Secrets often use base64 to preserve multiline JSON exactly.
+        try:
+            decoded = base64.b64decode(value + "=" * (-len(value) % 4), validate=True).decode("utf-8-sig")
+            info = json.loads(decoded)
+        except (binascii.Error, UnicodeDecodeError, json.JSONDecodeError) as exc:
+            raise RuntimeError(
+                "GDRIVE_OAUTH_TOKEN_JSON must be raw Google credential JSON or its Base64 encoding. "
+                "Use an authorized-user token JSON with refresh_token, or a service-account JSON; "
+                "an API key, file path, or OAuth client-only credentials.json cannot access Drive."
+            ) from exc
     if not isinstance(info, dict):
         raise RuntimeError("GDRIVE_OAUTH_TOKEN_JSON must be a JSON object")
     try:
