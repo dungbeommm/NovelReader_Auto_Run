@@ -9,7 +9,7 @@ Secrets:
 - `TELEGRAM_BOT_TOKEN`
 - `ALLOWED_TELEGRAM_USER_IDS` — ID số Telegram, phân cách dấu phẩy
 - `GDRIVE_OAUTH_TOKEN_JSON` — OAuth JSON có refresh token và quyền Google Drive
-- `GITHUB_DISPATCH_TOKEN` — token có quyền gọi repository dispatch
+- `GH_DISPATCH_TOKEN` — fine-grained token có quyền repository `Contents: write` để gọi repository dispatch
 
 Variables:
 

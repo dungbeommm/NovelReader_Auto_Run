@@ -173,10 +173,10 @@ class TelegramBot:
                                         {"text": "Hủy", "callback_data": f"cancel:{job_id}"}]]})
 
     def _dispatch(self, job_id: str, folder_id: str) -> None:
-        token = os.environ.get("GITHUB_DISPATCH_TOKEN", "")
+        token = os.environ.get("GH_DISPATCH_TOKEN", "")
         repo = os.environ.get("GITHUB_REPOSITORY", "dungbeommm/NovelReader_Auto_Run")
         if not token:
-            raise RuntimeError("GITHUB_DISPATCH_TOKEN chưa cấu hình trong GitHub Secrets")
+            raise RuntimeError("GH_DISPATCH_TOKEN chưa cấu hình trong GitHub Secrets")
         response = self.http.post(f"https://api.github.com/repos/{repo}/dispatches",
             headers={"Accept": "application/vnd.github+json", "Authorization": f"Bearer {token}",
                      "X-GitHub-Api-Version": "2022-11-28"},
