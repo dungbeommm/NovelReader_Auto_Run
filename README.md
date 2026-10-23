@@ -73,7 +73,7 @@ GitHub Actions giữ bot Telegram hoạt động. Khi người dùng bấm **B�
 Trong GitHub repository → **Settings → Secrets and variables → Actions**, thêm:
 
 - Secret `HF_TOKEN`: Hugging Face token có quyền ghi bucket.
-- Secret `GH_DISPATCH_TOKEN`: GitHub token để bot khởi chạy workflow xử lý job và tự bàn giao workflow bot trước giới hạn Actions. Token cần quyền `Actions: write` và `Contents: write` trên repo.
+- Bot dùng `GITHUB_TOKEN` do Actions cấp với quyền `Actions: write` và `Contents: write` để khởi chạy job và tự bàn giao; không cần lưu GitHub PAT riêng.
 - Secret `TELEGRAM_BOT_TOKEN` và `ALLOWED_TELEGRAM_USER_IDS`.
 - Repository variable `HF_BUCKET_ID` để đổi bucket khỏi `uri410/audio` (không bắt buộc).
 - Repository variable `MOLAB_NOTEBOOK_URL` để dùng app URL khác (mặc định là app công khai NovelReader).

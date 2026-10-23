@@ -39,7 +39,7 @@ jobs:
     timeout-minutes: 360
     concurrency:
       group: continuous-telegram-bot
-      cancel-in-progress: false
+      cancel-in-progress: true
     permissions:
       contents: write
       actions: write
@@ -73,8 +73,8 @@ jobs:
           HF_BUCKET_ID: ${{ vars.HF_BUCKET_ID || 'uri410/audio' }}
           HF_ROOT_PREFIX: ${{ vars.HF_ROOT_PREFIX || 'novelreader' }}
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
-          GITHUB_ACTIONS_TOKEN: ${{ secrets.GH_DISPATCH_TOKEN }}
-          GITHUB_DISPATCH_TOKEN: ${{ secrets.GH_DISPATCH_TOKEN }}
+          GITHUB_ACTIONS_TOKEN: ${{ github.token }}
+          GITHUB_DISPATCH_TOKEN: ${{ github.token }}
           GITHUB_REPOSITORY: ${{ github.repository }}
           NOVELREADER_WORKFLOW_FILE: novelreader.yml
           PYTHONUNBUFFERED: "1"
