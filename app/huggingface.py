@@ -8,7 +8,7 @@ from pathlib import Path
 from urllib.parse import quote
 
 from huggingface_hub import batch_bucket_files, bucket_info, download_bucket_files, list_bucket_tree
-from huggingface_hub.errors import EntryNotFoundError
+from huggingface_hub.errors import EntryNotFoundError, HfHubHTTPError
 
 
 class HuggingFaceStore:
@@ -24,7 +24,16 @@ class HuggingFaceStore:
         if not self.root_id or any(p in ("", ".", "..") or "\\" in p for p in self.root_id.split("/")):
             raise ValueError("HF_ROOT_PREFIX must contain safe path components")
         if check_bucket:
-            info = bucket_info(self.bucket, token=self.token)
+            try:
+                info = bucket_info(self.bucket, token=self.token)
+            except HfHubHTTPError as exc:
+                if getattr(exc.response, "status_code", None) == 401:
+                    raise RuntimeError(
+                        "Hugging Face rejected HF_TOKEN (401). Replace the GitHub Actions "
+                        "secret HF_TOKEN with a valid token that can access this bucket, "
+                        "then rerun the workflow."
+                    ) from exc
+                raise
             self.private = info.private
         else:
             self.private = None
