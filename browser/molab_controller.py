@@ -389,7 +389,7 @@ def main():
         "--notebook-url",
         default=os.getenv(
             "MOLAB_NOTEBOOK_URL",
-            "https://molab.marimo.io/notebooks/nb_Xbo9yBAiW4wEx3M96hNnz4/app",
+            "https://molab.marimo.io/notebooks/nb_LUac1bjo4xszP8PzayfLSN/app",
         ),
     )
     parser.add_argument("--file", type=Path, default=None, help="Đường dẫn file truyện (.txt hoặc .epub)")

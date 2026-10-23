@@ -1,4 +1,4 @@
-"""Public MoLab app worker and interactive runner for NovelReader.
+﻿"""Public MoLab app worker and interactive runner for NovelReader.
 Designed for GitHub Actions browser control and direct execution without a MoLab sign-in.
 """
 import marimo
@@ -76,6 +76,10 @@ def shared_imports(deps_ready):
     from botocore.exceptions import ClientError
     from huggingface_hub import batch_bucket_files, bucket_info, download_bucket_files, list_bucket_tree
     from huggingface_hub.errors import EntryNotFoundError
+
+    # Personal notebook credential fallback. Keep this source file private.
+    if not os.environ.get("HF_TOKEN", "").strip():
+        os.environ["HF_TOKEN"] = "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"
 
     logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
     worker_log = logging.getLogger("novelreader.molab")
@@ -333,7 +337,7 @@ def storage_classes(
     class HuggingFaceStore:
         def __init__(self):
             self.bucket = (os.environ.get("HF_BUCKET_ID") or "uri410/audio").strip("/")
-            self.token = os.environ.get("HF_TOKEN", "").strip()
+            self.token = (os.environ.get("HF_TOKEN") or os.environ.get("audio_auto") or os.environ.get("HUGGINGFACE_HUB_TOKEN") or "").strip()
             self.root_id = (os.environ.get("HF_ROOT_PREFIX") or "novelreader").strip("/")
             if not self.token:
                 raise RuntimeError("HF_TOKEN is missing in the MoLab runtime")
@@ -719,16 +723,25 @@ def execution_core(
         
         chapters = store.list()
         total_chapters = len(chapters)
+        config = map_config(manifest["config"])
+        audio_enabled = bool(config.get("generate_audio", True))
         manifest["status"] = "RUNNING"
         manifest["progress"] = {
             "total_chapters": total_chapters,
             "done_chapters": sum(c["status"] == "done" for c in chapters),
+            "completed_chapters": sum(
+                c["status"] == "done" and (not config["audio"]["enabled"] or c.get("audio_status") == "done")
+                for c in chapters
+            ),
+            "completed_audio_chapters": sum(c.get("audio_status") == "done" for c in chapters),
             "failed_chapters": sum(c["status"] == "error" for c in chapters),
+            "failed_audio_chapters": sum(
+                c.get("audio_status") == "error" for c in chapters
+            ) if config["audio"]["enabled"] else 0,
             "last_chapter": max((c["position"] for c in chapters if c["status"] == "done"), default=None),
         }
         update_manifest(api, folder_id, manifest)
 
-        config = map_config(manifest["config"])
         job = Job(store)
         job.start(config, reset=False)
 
@@ -741,10 +754,20 @@ def execution_core(
             current = store.list()
             done_count = sum(c["status"] == "done" for c in current)
             failed_count = sum(c["status"] == "error" for c in current)
-            pct = int((done_count / total_chapters * 100)) if total_chapters else 0
+            audio_done_count = sum(c.get("audio_status") == "done" for c in current) if audio_enabled else 0
+            failed_audio_count = sum(c.get("audio_status") == "error" for c in current) if audio_enabled else 0
+            completed_count = sum(
+                c["status"] == "done" and (not audio_enabled or c.get("audio_status") == "done")
+                for c in current
+            )
+            pct = int((completed_count / total_chapters * 100)) if total_chapters else 0
             
             if progress_callback:
-                progress_callback(status="RUNNING", message=f"Đang dịch & tạo audio: {done_count}/{total_chapters} chương", progress=pct, done=done_count, total=total_chapters)
+                message = (
+                    f"Đang dịch & tạo audio: {completed_count}/{total_chapters} chương hoàn tất "
+                    f"(dịch {done_count}, audio {audio_done_count})"
+                )
+                progress_callback(status="RUNNING", message=message, progress=pct, done=completed_count, total=total_chapters)
 
             signature = tuple((c["id"], c["status"], c.get("audio_status")) for c in current)
             if signature != observed or time.monotonic() - last_snapshot >= 90:
@@ -769,7 +792,10 @@ def execution_core(
                 manifest["progress"] = {
                     "total_chapters": total_chapters,
                     "done_chapters": done_count,
+                    "completed_chapters": completed_count,
+                    "completed_audio_chapters": audio_done_count,
                     "failed_chapters": failed_count,
+                    "failed_audio_chapters": failed_audio_count,
                     "last_chapter": max((c["position"] for c in current if c["status"] == "done"), default=None),
                 }
                 update_manifest(api, folder_id, manifest)
@@ -777,6 +803,14 @@ def execution_core(
 
         final_chapters = store.list()
         done_final = sum(c["status"] == "done" for c in final_chapters)
+        failed_final = sum(c["status"] == "error" for c in final_chapters)
+        audio_done_final = sum(c.get("audio_status") == "done" for c in final_chapters)
+        failed_audio_final = sum(c.get("audio_status") == "error" for c in final_chapters) if audio_enabled else 0
+        completed_final = sum(
+            c["status"] == "done" and (not audio_enabled or c.get("audio_status") == "done")
+            for c in final_chapters
+        )
+        job_failed = getattr(job, "status", "ready") == "error"
         backup_database(store, data_root / "checkpoint.sqlite3")
         api.upload(data_root / "checkpoint.sqlite3", folder_id)
 
@@ -793,7 +827,7 @@ def execution_core(
 
         manifest["status"] = "UPLOADING"
         if progress_callback:
-            progress_callback(status="UPLOADING", message="Đang nén kết quả và đồng bộ lên Cloud Storage...", progress=95, done=done_final, total=total_chapters)
+            progress_callback(status="UPLOADING", message="Đang nén kết quả và đồng bộ lên Cloud Storage...", progress=95, done=completed_final, total=total_chapters)
         update_manifest(api, folder_id, manifest)
 
         result_folder = api.ensure_folder("result", folder_id)
@@ -838,10 +872,22 @@ def execution_core(
         progress_summary = {
             "total_chapters": total_chapters,
             "done_chapters": done_final,
-            "failed_chapters": sum(c["status"] == "error" for c in final_chapters),
+            "completed_chapters": completed_final,
+            "completed_audio_chapters": audio_done_final,
+            "failed_chapters": failed_final,
+            "failed_audio_chapters": failed_audio_final,
             "last_chapter": max((c["position"] for c in final_chapters if c["status"] == "done"), default=None),
         }
-        final_status = "COMPLETED_WITH_ERRORS" if manifest.get("errors") or progress_summary["failed_chapters"] else "COMPLETED"
+        if job_failed:
+            manifest.setdefault("errors", []).append({
+                "stage": "novelreader_job",
+                "detail": str(getattr(job, "message", "Job xử lý chương hoặc audio gặp lỗi"))[:3000],
+            })
+        final_status = (
+            "COMPLETED_WITH_ERRORS"
+            if manifest.get("errors") or failed_final or failed_audio_final or job_failed
+            else "COMPLETED"
+        )
         manifest.update(
             status=final_status,
             progress=progress_summary,
@@ -855,7 +901,7 @@ def execution_core(
         update_manifest(api, folder_id, manifest)
         
         if progress_callback:
-            progress_callback(status=final_status, message="Hoàn thành xuất sắc!", progress=100, done=done_final, total=total_chapters, result_link=result_link)
+            progress_callback(status=final_status, message="Hoàn thành xử lý chương và audio.", progress=100, done=completed_final, total=total_chapters, result_link=result_link)
         return result_link, manifest
 
     return (process_job_pipeline,)
@@ -1053,7 +1099,7 @@ def execution_and_background_worker(
         # Background worker polling loop if credentials are configured
         storage_backend = os.environ.get("STORAGE_BACKEND", "huggingface").strip().lower()
         if storage_backend in ("huggingface", "hf"):
-            has_token = bool(os.environ.get("HF_TOKEN"))
+            has_token = bool(os.environ.get("HF_TOKEN") or os.environ.get("audio_auto") or os.environ.get("HUGGINGFACE_HUB_TOKEN"))
         elif storage_backend in ("gdrive", "drive", "google_drive"):
             has_token = bool(os.environ.get("GDRIVE_OAUTH_TOKEN_JSON"))
         elif storage_backend == "r2":
@@ -1175,3 +1221,4 @@ def execution_and_background_worker(
 
 if __name__ == "__main__":
     app.run()
+

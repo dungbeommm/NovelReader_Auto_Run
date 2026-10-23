@@ -118,7 +118,7 @@ def main() -> int:
         "--notebook-url",
         default=os.getenv(
             "MOLAB_NOTEBOOK_URL",
-            "https://molab.marimo.io/notebooks/nb_Xbo9yBAiW4wEx3M96hNnz4/app",
+            "https://molab.marimo.io/notebooks/nb_LUac1bjo4xszP8PzayfLSN/app",
         ),
     )
     parser.add_argument("--idle-seconds", type=int, default=20)

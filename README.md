@@ -84,7 +84,7 @@ Trong GitHub repository → **Settings → Secrets and variables → Actions**, 
 
 1. Bấm **Run workflow** để khởi động bot Telegram.
 2. Gửi truyện, chỉnh cấu hình nếu cần rồi bấm **Bắt đầu**. Bot lưu job vào HF và gửi mã job sang GitHub.
-3. Workflow job mở [URL app MoLab công khai](https://molab.marimo.io/notebooks/nb_Xbo9yBAiW4wEx3M96hNnz4/app), chạy notebook, lưu kết quả; bot gửi link về Telegram. Không cần VM self-hosted hay đăng nhập MoLab.
+3. Workflow job mở [URL app MoLab công khai](https://molab.marimo.io/notebooks/nb_LUac1bjo4xszP8PzayfLSN/app), chạy notebook, lưu kết quả; bot gửi link về Telegram. Không cần VM self-hosted hay đăng nhập MoLab.
 
 ### Sơ đồ chữ: một nút Bắt đầu chạy toàn bộ job
 
