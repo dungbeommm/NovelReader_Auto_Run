@@ -63,9 +63,9 @@ python -m unittest discover -s tests -v
 marimo check notebook/NovelReader_Auto_Run.py
 ```
 
-## Lưu trữ Hugging Face và đăng nhập MoLab lần đầu
+## Lưu trữ Hugging Face và MoLab app công khai
 
-GitHub Actions nhận Telegram job; job trình duyệt chạy trên Windows self-hosted runner để có thể mở màn hình đăng nhập MoLab. Sản phẩm, job và checkpoint được lưu trong bucket `uri410/audio`. Bucket đang công khai, vì vậy profile Chromium chỉ được tải lên sau khi mã hóa; khóa giải mã chỉ lưu trong GitHub Actions Secrets.
+GitHub Actions nhận Telegram job; job trình duyệt chạy trên Windows self-hosted runner và mở URL app MoLab công khai, không cần đăng nhập. Sản phẩm, job và checkpoint được lưu trong bucket Hugging Face `uri410/audio`.
 
 ### Secrets và biến cần cấu hình
 
@@ -73,27 +73,17 @@ Trong GitHub repository → **Settings → Secrets and variables → Actions**, 
 
 - Secret `HF_TOKEN`: Hugging Face token có quyền ghi bucket.
 - Secret `GH_DISPATCH_TOKEN`: GitHub token dùng để gọi job Windows và tự bàn giao workflow. Token cần quyền `Actions: write` và `Contents: write` trên repo.
-- Secret `MOLAB_PROFILE_ENCRYPTION_KEY`: tạo một lần bằng lệnh sau trên máy cá nhân rồi lưu nguyên chuỗi kết quả vào secret. Không đăng chuỗi này lên repo hoặc HF:
-
-```powershell
-python -m pip install cryptography
-python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"
-```
-
 - Secret `TELEGRAM_BOT_TOKEN` và `ALLOWED_TELEGRAM_USER_IDS`.
 - Repository variable `HF_BUCKET_ID` để đổi bucket khỏi `uri410/audio` (không bắt buộc).
-- Repository variable `MOLAB_NOTEBOOK_URL` để dùng notebook khác URL mặc định (không bắt buộc).
+- Repository variable `MOLAB_NOTEBOOK_URL` để dùng app URL khác (mặc định là app công khai NovelReader).
 
-Đặt `HF_TOKEN` trong Secrets của notebook MoLab nữa, vì notebook chạy trong môi trường MoLab riêng. Token cần quyền ghi bucket.
+`HF_TOKEN` phải được cấu hình riêng trong runtime MoLab và trong GitHub Actions; hai môi trường không chia sẻ biến môi trường. Token cần quyền ghi bucket. Nếu thiếu token hoặc worker gặp lỗi khi xử lý job, manifest sẽ chuyển sang `FAILED` và bot gửi chi tiết lỗi.
 
 ### Cài Windows runner có màn hình
 
-1. Dùng Windows VM có Remote Desktop. Cài Python 3.12 và đăng ký VM làm GitHub self-hosted Actions runner với labels `self-hosted`, `Windows`, `molab-vm`.
-2. Đăng nhập Windows bằng Remote Desktop và chạy agent runner trong desktop người dùng hiện tại, ví dụ `run.cmd`. Không chạy runner dưới dạng Windows Service cho bước đăng nhập đầu tiên; service chạy trong session nền nên cửa sổ Chromium không hiện trên desktop.
-3. Bấm **Run workflow** một lần để khởi động Telegram bot; không cần chọn mode. Khi workflow đã chạy, gửi truyện cho bot rồi bấm **Bắt đầu** một lần để chạy toàn bộ job.
-4. Lần đầu, Windows runner tự mở cửa sổ Chromium trên desktop VM. Đăng nhập MoLab; job mã hóa profile lên HF rồi tiếp tục chạy. Những lần sau runner tự khôi phục profile, mở notebook và chờ job hoàn tất.
-
-Nếu MoLab hết phiên đăng nhập, lần bấm **Bắt đầu** tiếp theo sẽ mở lại Chromium để bạn đăng nhập. Phải giữ nguyên `MOLAB_PROFILE_ENCRYPTION_KEY` để khôi phục profile. Nếu mất khóa, xóa `novelreader/auth/molab-profile.enc` khỏi bucket rồi gửi job mới và đăng nhập lại. Do bucket công khai, người khác có thể tải ciphertext; họ vẫn cần khóa bí mật để giải mã.
+1. Dùng Windows VM và đăng ký VM làm GitHub self-hosted Actions runner với labels `self-hosted`, `Windows`, `molab-vm`.
+2. Bấm **Run workflow** một lần để khởi động Telegram bot; gửi truyện cho bot rồi bấm **Bắt đầu**.
+3. Runner tự mở [URL app MoLab công khai](https://molab.marimo.io/notebooks/nb_Xbo9yBAiW4wEx3M96hNnz4/app), nạp job từ Hugging Face và chờ hoàn tất. Không cần phiên đăng nhập MoLab hay profile trình duyệt lưu trên HF.
 
 ### Sơ đồ chữ: một nút Bắt đầu chạy toàn bộ job
 
@@ -114,9 +104,8 @@ Push main / lịch 5 giờ / Run workflow (không có menu mode)
                        │
           ┌────────────┴────────────┐
           │                         │
-  Chưa có phiên MoLab       Đã có phiên MoLab
-  mở Chromium trên VM       khôi phục profile mã hóa
-  bạn đăng nhập 1 lần       từ HF; không cần bấm gì
+   Mở URL app MoLab công khai
+   không cần đăng nhập
           └────────────┬────────────┘
                        ▼
           Mở notebook MoLab tự động

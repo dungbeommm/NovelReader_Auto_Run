@@ -94,14 +94,12 @@ jobs:
         run: |
           python -m pip install -r requirements.txt playwright
           python -m playwright install chromium
-      - name: Restore encrypted login and run MoLab job
+      - name: Open public MoLab app and run job
         env:
-          MOLAB_NOTEBOOK_URL: ${{ vars.MOLAB_NOTEBOOK_URL || 'https://molab.marimo.io/notebooks/nb_HCLKeWuzfZyxDmgL44Sws5' }}
-          MOLAB_BROWSER_PROFILE: ${{ vars.MOLAB_BROWSER_PROFILE || 'C:\molab-browser-profile' }}
+          MOLAB_NOTEBOOK_URL: ${{ vars.MOLAB_NOTEBOOK_URL || 'https://molab.marimo.io/notebooks/nb_Xbo9yBAiW4wEx3M96hNnz4/app' }}
           STORAGE_BACKEND: huggingface
           HF_BUCKET_ID: ${{ vars.HF_BUCKET_ID || 'uri410/audio' }}
           HF_ROOT_PREFIX: ${{ vars.HF_ROOT_PREFIX || 'novelreader' }}
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
-          MOLAB_PROFILE_ENCRYPTION_KEY: ${{ secrets.MOLAB_PROFILE_ENCRYPTION_KEY }}
           NOVELREADER_JOB_ID: ${{ github.event.client_payload.job_id || '' }}
-        run: python -m browser.molab_controller --notebook-url "$env:MOLAB_NOTEBOOK_URL" --storage huggingface --profile-dir "$env:MOLAB_BROWSER_PROFILE" --sync-profile
+        run: python -m browser.molab_controller --notebook-url "$env:MOLAB_NOTEBOOK_URL" --storage huggingface

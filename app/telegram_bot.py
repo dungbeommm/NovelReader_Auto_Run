@@ -287,7 +287,8 @@ class TelegramBot:
                 if dispatched else
                 "Chưa cấu hình GitHub Actions dispatch; cần mở worker MoLab thủ công."
             )
-            self.send(chat_id, f"Đã xếp job {draft['job_id']} vào hàng đợi. {notice} Bot sẽ gửi lỗi và link kết quả khi hoàn tất.")
+            story_name = draft.get("input", {}).get("name") or "truyện đã gửi"
+            self.send(chat_id, f"Đã xếp truyện '{story_name}' vào hàng đợi. {notice} Bot sẽ gửi lỗi và link kết quả khi hoàn tất.")
             user["draft"] = None
             self.save_state()
 
@@ -348,9 +349,10 @@ class TelegramBot:
             folder, manifest = self._job(job_id)
             if manifest:
                 p = manifest.get("progress", {})
-                self.send(chat_id, f"Job {job_id}\nTrạng thái: {manifest['status']}\nChương: {p.get('done_chapters', 0)}/{p.get('total_chapters', 0)}; lỗi: {p.get('failed_chapters', 0)}")
+                story_name = manifest.get("input", {}).get("name") or "truyện đã gửi"
+                self.send(chat_id, f"Truyện: {story_name}\nTrạng thái: {manifest['status']}\nChương: {p.get('done_chapters', 0)}/{p.get('total_chapters', 0)}; lỗi: {p.get('failed_chapters', 0)}")
             else:
-                self.send(chat_id, f"Không tìm thấy dữ liệu job {job_id}.")
+                self.send(chat_id, "Không tìm thấy dữ liệu truyện đã gửi.")
         elif command == "/result":
             user = self._user(user_id)
             job_id = user.get("last_job")
@@ -414,7 +416,8 @@ class TelegramBot:
             while notified.get("errors", 0) < len(errors):
                 error = errors[notified.get("errors", 0)]
                 snippet = str(error.get("detail", ""))[-2200:]
-                self.send(int(chat_id), f"Lỗi job {manifest['job_id']} | chương {error.get('chapter', '?')} | {error.get('stage', 'worker')}\n{snippet}")
+                story_name = manifest.get("input", {}).get("name") or "truyện đã gửi"
+                self.send(int(chat_id), f"Lỗi truyện '{story_name}' | chương {error.get('chapter', '?')} | {error.get('stage', 'worker')}\n{snippet}")
                 notified["errors"] = notified.get("errors", 0) + 1
                 self.storage.put_json(folder, "notifications.json", notified)
             if manifest.get("status") in ("COMPLETED", "COMPLETED_WITH_ERRORS", "FAILED") and not notified.get("result"):
@@ -422,7 +425,8 @@ class TelegramBot:
                 sharing = manifest.get("config", {}).get("storage", manifest.get("config", {}).get("pixeldrain", {})).get("sharing")
                 link = self.storage.share_link_reader(result["result_path"]) if result.get("result_path") and sharing == "link_reader" else "(kết quả riêng tư, chưa có link)"
                 counts = manifest.get("progress", {})
-                self.send(int(chat_id), f"Job {manifest['job_id']}: {manifest['status']}\nChương {counts.get('done_chapters', 0)}/{counts.get('total_chapters', 0)}; lỗi {counts.get('failed_chapters', 0)}\nKết quả: {link}\nDùng /result để xem lại link kết quả.")
+                story_name = manifest.get("input", {}).get("name") or "truyện đã gửi"
+                self.send(int(chat_id), f"Truyện '{story_name}': {manifest['status']}\nChương {counts.get('done_chapters', 0)}/{counts.get('total_chapters', 0)}; lỗi {counts.get('failed_chapters', 0)}\nKết quả: {link}\nDùng /result để xem lại link kết quả.")
                 notified["result"] = True
                 self.storage.put_json(folder, "notifications.json", notified)
 

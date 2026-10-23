@@ -1,6 +1,5 @@
-"""MoLab notebook worker and interactive runner for NovelReader.
-Designed for both automated browser control (Chromium / Playwright in GitHub Actions)
-and direct interactive execution on MoLab (https://molab.marimo.io).
+"""Public MoLab app worker and interactive runner for NovelReader.
+Designed for GitHub Actions browser control and direct execution without a MoLab sign-in.
 """
 import marimo
 
@@ -16,9 +15,9 @@ def title_cell(mo):
     mo.md(r"""
     # ⚡ NovelReader AI — MoLab Auto Run Edition
 
-    Hệ thống dịch thuật & tạo audio tự động: **Telegram Bot ➔ GitHub Actions ➔ Chromium Browser ➔ MoLab Notebook ➔ Cloud Storage**.
+    Hệ thống dịch thuật & tạo audio tự động: **Telegram Bot ➔ GitHub Actions ➔ MoLab App công khai ➔ Hugging Face**.
     
-    *Hỗ trợ cả chế độ điều khiển tự động qua trình duyệt (**Browser Automation**) và chế độ công nhân nền (**Background Worker**).*
+    *App có thể mở công khai không cần đăng nhập. Worker nền nhận job từ Telegram và lưu tiến trình/kết quả lên Hugging Face.*
     """)
     return
 
@@ -1065,6 +1064,22 @@ def execution_and_background_worker(
             has_token = bool(os.environ.get("PIXELDRAIN_API_KEY"))
         else:
             has_token = False
+        if has_token:
+            try:
+                probe_api = create_store(storage_backend)
+                if storage_backend in ("huggingface", "hf"):
+                    probe_folder = probe_api.ensure_folder(BOT_APP_FOLDER)
+                    probe_value = {"ok": True}
+                    probe_api.put_json(probe_folder, "runtime_healthcheck.json", probe_value)
+                    if probe_api.get_json(probe_folder, "runtime_healthcheck.json") != probe_value:
+                        raise RuntimeError("Hugging Face write/read health check returned unexpected data")
+            except Exception as err:
+                has_token = False
+                worker_log.exception("Storage startup health check failed")
+                runner_state.update(
+                    status="FAILED",
+                    error=f"Storage startup check failed ({type(err).__name__}): {err}",
+                )
         if has_token and not getattr(threading, "_novelreader_auto_worker_started", False):
             def _bg_loop():
                 worker_log.info("Background storage poller started.")
@@ -1084,7 +1099,24 @@ def execution_and_background_worker(
                                 break
                         if pending:
                             worker_log.info(f"Processing job {pending[1]['job_id']}")
-                            process_job_pipeline(api, pending[0], pending[1])
+                            try:
+                                process_job_pipeline(api, pending[0], pending[1])
+                            except Exception as err:
+                                worker_log.exception("Job %s failed", pending[1].get("job_id"))
+                                failed_manifest = pending[1]
+                                failed_manifest["status"] = "FAILED"
+                                failed_manifest["updated_at"] = now_iso()
+                                failed_manifest.setdefault("errors", []).append({
+                                    "stage": "worker",
+                                    "detail": f"{type(err).__name__}: {err}"[-3000:],
+                                })
+                                try:
+                                    api.put_json(pending[0], "job.json", failed_manifest)
+                                except Exception:
+                                    worker_log.exception(
+                                        "Could not persist FAILED status for job %s",
+                                        failed_manifest.get("job_id"),
+                                    )
                     except Exception as err:
                         worker_log.error(f"Worker cycle error: {err}")
                     time.sleep(30)
@@ -1093,6 +1125,12 @@ def execution_and_background_worker(
             t.start()
             threading._novelreader_auto_worker_started = True
             runner_state.update(status="LISTENING", message="Công nhân nền đang lắng nghe job từ Telegram...")
+        elif not has_token and runner_state["status"] != "FAILED":
+            runner_state.update(
+                status="FAILED",
+                error=f"Storage credentials are missing for backend '{storage_backend}'. "
+                      "Configure HF_TOKEN in the MoLab runtime.",
+            )
 
     cur_status = runner_state["status"]
     cur_prog = runner_state["progress"]
@@ -1101,6 +1139,7 @@ def execution_and_background_worker(
     cur_msg = runner_state["message"]
     cur_link = runner_state["result_link"]
     cur_err = runner_state["error"]
+    safe_err = str(cur_err).replace("&", "&amp;").replace('"', "&quot;").replace("<", "&lt;").replace(">", "&gt;")
 
     status_color = "#4caf50" if "COMPLETED" in cur_status else ("#f44336" if "FAIL" in cur_status else "#2196f3")
 
@@ -1111,6 +1150,7 @@ def execution_and_background_worker(
          data-done="{cur_done}" 
          data-total="{cur_tot}" 
          data-result-link="{cur_link}"
+         data-error="{safe_err}"
          style="margin-top: 16px; padding: 16px; border: 1px solid #ccc; border-radius: 8px; background: #fff;">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
             <span style="font-weight: bold; font-size: 16px;">Trạng thái tiến trình:</span>
@@ -1126,7 +1166,7 @@ def execution_and_background_worker(
             <span>Tiến độ: {cur_done}/{cur_tot} chương ({cur_prog}%)</span>
         </div>
         {f'<div id="novelreader-result" style="margin-top: 14px; padding: 12px; background: #e8f5e9; border: 1px solid #a5d6a7; border-radius: 6px;"><strong style="color: #2e7d32;">🎉 Kết quả đã sẵn sàng:</strong> <a id="novelreader-download-link" href="{cur_link}" target="_blank" style="font-weight: bold; color: #1565c0; word-break: break-all;">{cur_link}</a></div>' if cur_link else ''}
-        {f'<div style="margin-top: 12px; padding: 10px; background: #ffebee; color: #c62828; border-radius: 4px;"><strong>Lỗi:</strong> {cur_err}</div>' if cur_err else ''}
+        {f'<div style="margin-top: 12px; padding: 10px; background: #ffebee; color: #c62828; border-radius: 4px;"><strong>Lỗi:</strong> {safe_err}</div>' if cur_err else ''}
     </div>
     """)
     mo.output.append(dashboard_html)

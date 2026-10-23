@@ -96,12 +96,19 @@ def _sync_profile(profile_dir: Path, *, download: bool = False) -> bool:
 
 
 async def _notebook_surface(page, timeout_ms: int = 90000):
-    """MoLab serves the notebook in a cross-origin preview iframe."""
+    """Find the notebook frame, or use the page itself for a public /app URL."""
     deadline = time.monotonic() + timeout_ms / 1000
     while time.monotonic() < deadline:
         for frame in page.frames:
             if "preview.sb.molab.run" in frame.url:
                 return frame
+            try:
+                if await frame.locator(
+                    "#novelreader-container, .marimo-app, [data-marimo-app]"
+                ).count():
+                    return frame
+            except Exception:
+                continue
         await asyncio.sleep(1)
     return page
 
@@ -183,7 +190,17 @@ async def run_molab_automation(
             logger.warning(f"Điều hướng ban đầu: {exc}. Đang thử đợi nội dung render...")
 
         surface = await _notebook_surface(page, timeout_ms=90000 if profile_available else 15 * 60 * 1000)
+        public_app_url = page.url.rstrip("/").endswith("/app")
         preview_loaded = any("preview.sb.molab.run" in frame.url for frame in page.frames)
+        if public_app_url and not preview_loaded:
+            surface = page
+            try:
+                await surface.wait_for_selector(
+                    "#novelreader-container, .marimo-app, [data-marimo-app]", timeout=30000
+                )
+                preview_loaded = True
+            except Exception:
+                logger.warning("Public MoLab app did not expose the NovelReader UI yet.")
         if sync_profile and profile_dir and not preview_loaded:
             await context.close()
             await _interactive_login(p, notebook_url, profile_dir)
@@ -204,7 +221,8 @@ async def run_molab_automation(
             logger.warning("Không tìm thấy #novelreader-container ngay, đợi thêm 10s...")
             await asyncio.sleep(10)
 
-        if any(part in page.url.lower() for part in ("/login", "/signin", "accounts.google.com")) or not preview_loaded:
+        if (any(part in page.url.lower() for part in ("/login", "/signin", "accounts.google.com"))
+                or (not preview_loaded and not public_app_url)):
             await context.close()
             if browser:
                 await browser.close()
@@ -298,7 +316,7 @@ async def run_molab_automation(
                         }
                         break
 
-            status_el = None if job_id else await surface.query_selector("#novelreader-status")
+            status_el = await surface.query_selector("#novelreader-status")
             if status_el:
                 cur_status = (await status_el.get_attribute("data-status")) or "RUNNING"
                 cur_prog = (await status_el.get_attribute("data-progress")) or "0"
@@ -308,7 +326,11 @@ async def run_molab_automation(
 
                 logger.info(f"[{int(elapsed)}s] Trạng thái: {cur_status} | Tiến độ: {cur_done}/{cur_tot} chương ({cur_prog}%)")
 
-                if cur_status in ("COMPLETED", "COMPLETED_WITH_ERRORS"):
+                if job_id and cur_status == "FAILED":
+                    detail = (await status_el.get_attribute("data-error")) or "MoLab worker failed to start."
+                    raise RuntimeError(detail)
+
+                if not job_id and cur_status in ("COMPLETED", "COMPLETED_WITH_ERRORS"):
                     logger.info(f"🎉 Xử lý hoàn tất! Link tải: {cur_link}")
                     final_result = {
                         "status": cur_status,
@@ -318,7 +340,7 @@ async def run_molab_automation(
                         "total": cur_tot,
                     }
                     break
-                elif cur_status in ("FAILED", "STOPPED"):
+                elif not job_id and cur_status in ("FAILED", "STOPPED"):
                     logger.error(f"❌ Xử lý kết thúc với trạng thái: {cur_status}")
                     final_result = {"status": cur_status, "result_link": "", "progress": cur_prog}
                     break
@@ -363,7 +385,13 @@ async def run_molab_automation(
 
 def main():
     parser = argparse.ArgumentParser(description="NovelReader MoLab Browser Automation Controller")
-    parser.add_argument("--notebook-url", default=os.getenv("MOLAB_NOTEBOOK_URL", "https://molab.marimo.io/notebooks"))
+    parser.add_argument(
+        "--notebook-url",
+        default=os.getenv(
+            "MOLAB_NOTEBOOK_URL",
+            "https://molab.marimo.io/notebooks/nb_Xbo9yBAiW4wEx3M96hNnz4/app",
+        ),
+    )
     parser.add_argument("--file", type=Path, default=None, help="Đường dẫn file truyện (.txt hoặc .epub)")
     parser.add_argument("--config", default=None, help="Đường dẫn file JSON cấu hình hoặc chuỗi JSON")
     parser.add_argument("--storage", default=os.getenv("STORAGE_BACKEND", "huggingface"))
