@@ -19,7 +19,9 @@ import json
 import logging
 import os
 import sys
+import tempfile
 import time
+import zipfile
 from pathlib import Path
 from typing import Any
 
@@ -27,6 +29,80 @@ import requests
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
 logger = logging.getLogger("novelreader.browser")
+PROFILE_OBJECT_NAME = "molab-profile.enc"
+
+
+def _profile_store():
+    from app.storage import create_store
+
+    store = create_store()
+    root = store.ensure_folder("NovelReader_Auto_Run")
+    auth = store.ensure_folder("auth", root)
+    return store, auth
+
+
+def _sync_profile(profile_dir: Path, *, download: bool = False) -> None:
+    """Store only an authenticated encrypted Chromium profile in the HF bucket."""
+    from cryptography.fernet import Fernet
+
+    key = os.getenv("MOLAB_PROFILE_ENCRYPTION_KEY", "").strip()
+    if not key:
+        raise RuntimeError("Set Actions secret MOLAB_PROFILE_ENCRYPTION_KEY to a Fernet key")
+    cipher = Fernet(key.encode("ascii"))
+    store, auth_folder = _profile_store()
+    profile_dir.mkdir(parents=True, exist_ok=True)
+    if download:
+        with tempfile.TemporaryDirectory(prefix="novelreader-profile-") as tmp:
+            encrypted = Path(tmp) / PROFILE_OBJECT_NAME
+            try:
+                store.download(store.child(auth_folder, PROFILE_OBJECT_NAME), encrypted)
+            except Exception as exc:
+                # A missing object is expected on first setup; all other errors should fail closed.
+                from huggingface_hub.errors import EntryNotFoundError
+                if isinstance(exc, EntryNotFoundError):
+                    logger.info("No saved HF browser profile yet; using local profile directory.")
+                    return
+                raise
+            archive = Path(tmp) / "profile.zip"
+            try:
+                archive.write_bytes(cipher.decrypt(encrypted.read_bytes()))
+            except Exception as exc:
+                raise RuntimeError("Cannot decrypt saved MoLab profile; check MOLAB_PROFILE_ENCRYPTION_KEY") from exc
+            resolved = profile_dir.resolve()
+            with zipfile.ZipFile(archive) as bundle:
+                for member in bundle.infolist():
+                    target = (resolved / member.filename).resolve()
+                    if target != resolved and resolved not in target.parents:
+                        raise RuntimeError("Unsafe path in encrypted browser profile archive")
+                bundle.extractall(resolved)
+        logger.info("Restored encrypted MoLab profile from Hugging Face.")
+        return
+
+    excluded_dirs = {"Cache", "Code Cache", "GPUCache", "GrShaderCache", "ShaderCache", "Service Worker"}
+    with tempfile.TemporaryDirectory(prefix="novelreader-profile-") as tmp:
+        archive = Path(tmp) / "profile.zip"
+        with zipfile.ZipFile(archive, "w", compression=zipfile.ZIP_DEFLATED) as bundle:
+            for path in profile_dir.rglob("*"):
+                if not path.is_file() or any(part in excluded_dirs for part in path.relative_to(profile_dir).parts):
+                    continue
+                if path.name.endswith((".lock", ".sock")) or path.name in {"SingletonLock", "SingletonSocket", "SingletonCookie"}:
+                    continue
+                bundle.write(path, path.relative_to(profile_dir).as_posix())
+        encrypted = Path(tmp) / PROFILE_OBJECT_NAME
+        encrypted.write_bytes(cipher.encrypt(archive.read_bytes()))
+        store.upload(encrypted, auth_folder, PROFILE_OBJECT_NAME)
+    logger.info("Saved encrypted MoLab browser profile to Hugging Face.")
+
+
+async def _notebook_surface(page, timeout_ms: int = 90000):
+    """MoLab serves the notebook in a cross-origin preview iframe."""
+    deadline = time.monotonic() + timeout_ms / 1000
+    while time.monotonic() < deadline:
+        for frame in page.frames:
+            if "preview.sb.molab.run" in frame.url:
+                return frame
+        await asyncio.sleep(1)
+    return page
 
 
 async def run_molab_automation(
@@ -39,6 +115,9 @@ async def run_molab_automation(
     max_duration_seconds: int = 18000,  # 5 hours max
     telegram_bot_token: str | None = None,
     telegram_chat_id: int | None = None,
+    profile_dir: Path | None = None,
+    job_id: str | None = None,
+    sync_profile: bool = False,
 ) -> dict[str, Any]:
     try:
         from playwright.async_api import async_playwright
@@ -47,18 +126,31 @@ async def run_molab_automation(
         raise RuntimeError("Playwright is required for browser automation")
 
     logger.info(f"Khởi động trình duyệt Chromium tự động (headless={headless})...")
+    if sync_profile and profile_dir:
+        _sync_profile(profile_dir, download=True)
     async with async_playwright() as p:
-        browser = await p.chromium.launch(
-            headless=headless,
-            args=[
+        launch_options = {
+            "headless": headless,
+            "args": [
                 "--no-sandbox",
                 "--disable-dev-shm-usage",
                 "--disable-gpu",
                 "--window-size=1920,1080",
             ],
-        )
-        context = await browser.new_context(viewport={"width": 1920, "height": 1080})
-        page = await context.new_page()
+        }
+        if profile_dir:
+            profile_dir.mkdir(parents=True, exist_ok=True)
+            context = await p.chromium.launch_persistent_context(
+                user_data_dir=str(profile_dir.resolve()),
+                viewport={"width": 1920, "height": 1080},
+                **launch_options,
+            )
+            page = context.pages[0] if context.pages else await context.new_page()
+            browser = None
+        else:
+            browser = await p.chromium.launch(**launch_options)
+            context = await browser.new_context(viewport={"width": 1920, "height": 1080})
+            page = await context.new_page()
 
         logger.info(f"Đang điều hướng tới MoLab Notebook: {notebook_url}")
         try:
@@ -66,21 +158,30 @@ async def run_molab_automation(
         except Exception as exc:
             logger.warning(f"Điều hướng ban đầu: {exc}. Đang thử đợi nội dung render...")
 
+        surface = await _notebook_surface(page)
         logger.info("Chờ giao diện NovelReader hoặc Marimo app tải...")
         try:
-            await page.wait_for_selector("#novelreader-container, .marimo-app, [data-marimo-app]", timeout=90000)
+            await surface.wait_for_selector("#novelreader-container, .marimo-app, [data-marimo-app]", timeout=90000)
             logger.info("✅ Giao diện Marimo Notebook đã sẵn sàng.")
         except Exception:
             logger.warning("Không tìm thấy #novelreader-container ngay, đợi thêm 10s...")
             await asyncio.sleep(10)
+
+        if any(part in page.url.lower() for part in ("/login", "/signin", "accounts.google.com")) or not any("preview.sb.molab.run" in f.url for f in page.frames):
+            await context.close()
+            if browser:
+                await browser.close()
+            raise RuntimeError(
+                "MoLab needs a manual sign-in. Run this controller with --login on the Windows VM."
+            )
 
         # 1. Upload story file if provided
         if file_path and file_path.exists():
             logger.info(f"Đang tải file truyện lên notebook: {file_path.name}")
             file_input_selector = "#novelreader-file-input input[type='file'], input[type='file']"
             try:
-                await page.wait_for_selector(file_input_selector, timeout=30000)
-                await page.set_input_files(file_input_selector, str(file_path.resolve()))
+                await surface.wait_for_selector(file_input_selector, timeout=30000)
+                await surface.set_input_files(file_input_selector, str(file_path.resolve()))
                 logger.info("✅ Đã đưa file truyện vào file input widget.")
             except Exception as exc:
                 logger.warning(f"Không thể đặt file trực tiếp vào input: {exc}")
@@ -91,8 +192,8 @@ async def run_molab_automation(
             config_selector = "#novelreader-config-input textarea, textarea"
             try:
                 config_str = json.dumps(config_data, indent=2, ensure_ascii=False)
-                await page.wait_for_selector(config_selector, timeout=20000)
-                await page.fill(config_selector, config_str)
+                await surface.wait_for_selector(config_selector, timeout=20000)
+                await surface.fill(config_selector, config_str)
                 logger.info("✅ Đã cập nhật cấu hình JSON.")
             except Exception as exc:
                 logger.warning(f"Không thể điền cấu hình vào textarea: {exc}")
@@ -100,23 +201,34 @@ async def run_molab_automation(
         # 3. Select storage backend if dropdown exists
         storage_selector = "#novelreader-storage-select select, select"
         try:
-            if await page.query_selector(storage_selector):
-                await page.select_option(storage_selector, storage_backend)
+            if await surface.query_selector(storage_selector):
+                await surface.select_option(storage_selector, storage_backend)
                 logger.info(f"✅ Đã chọn dịch vụ lưu trữ: {storage_backend}")
         except Exception:
             pass
 
-        # 4. Click Run Button
-        logger.info("Kích hoạt nút Run trên giao diện MoLab...")
-        run_btn_selector = "#novelreader-run-btn button, button:has-text('RUN'), button:has-text('BẮT ĐẦU')"
-        try:
-            await page.wait_for_selector(run_btn_selector, timeout=30000)
-            await page.click(run_btn_selector)
-            logger.info("🚀 Đã nhấn nút Run. Tiến trình NovelReader bắt đầu hoạt động.")
-        except Exception as exc:
-            logger.warning(f"Không thể bấm nút Run: {exc}. Kiểm tra xem worker có tự chạy ngầm không...")
+        # Telegram jobs are queued in HF and started by the notebook poller.
+        if job_id:
+            logger.info("Waiting for the MoLab background worker to process the queued Telegram job.")
+        else:
+            logger.info("Clicking the Run button for the manually uploaded file.")
+            run_btn_selector = "#novelreader-run-btn button, button:has-text('RUN')"
+            try:
+                await surface.wait_for_selector(run_btn_selector, timeout=30000)
+                await surface.click(run_btn_selector)
+            except Exception as exc:
+                logger.warning(f"Could not click the Run button: {exc}")
 
         # 5. Monitor progress loop
+        job_store = None
+        job_folder = None
+        if job_id:
+            from app.storage import create_store
+
+            job_store = create_store()
+            app_folder = job_store.ensure_folder("NovelReader_Auto_Run")
+            jobs_folder = job_store.ensure_folder("jobs", app_folder)
+            job_folder = job_store.ensure_folder(job_id, jobs_folder)
         start_time = time.monotonic()
         final_result = {"status": "UNKNOWN", "result_link": "", "progress": 0}
 
@@ -127,7 +239,29 @@ async def run_molab_automation(
                 final_result["status"] = "TIMEOUT"
                 break
 
-            status_el = await page.query_selector("#novelreader-status")
+            if job_store and job_folder:
+                manifest = job_store.get_json(job_folder, "job.json")
+                if manifest:
+                    cur_status = manifest.get("status", "UNKNOWN")
+                    progress = manifest.get("progress", {})
+                    cur_done = progress.get("done_chapters", 0)
+                    cur_total = progress.get("total_chapters", 0)
+                    logger.info(f"[{int(elapsed)}s] Job {job_id}: {cur_status} | {cur_done}/{cur_total} chapters")
+                    if cur_status in ("COMPLETED", "COMPLETED_WITH_ERRORS", "FAILED"):
+                        result = manifest.get("result") or {}
+                        link = result.get("download_link", "")
+                        if not link and result.get("result_path"):
+                            link = job_store.share_link_reader(result["result_path"])
+                        final_result = {
+                            "status": cur_status,
+                            "result_link": link,
+                            "progress": 100 if cur_status.startswith("COMPLETED") else 0,
+                            "done": cur_done,
+                            "total": cur_total,
+                        }
+                        break
+
+            status_el = None if job_id else await surface.query_selector("#novelreader-status")
             if status_el:
                 cur_status = (await status_el.get_attribute("data-status")) or "RUNNING"
                 cur_prog = (await status_el.get_attribute("data-progress")) or "0"
@@ -176,14 +310,51 @@ async def run_molab_automation(
         logger.info("Thực hiện ngưng phiên MoLab để tiết kiệm tài nguyên...")
         stop_btn_selector = "#novelreader-stop-btn button, button:has-text('STOP'), button:has-text('DỪNG')"
         try:
-            if await page.query_selector(stop_btn_selector):
-                await page.click(stop_btn_selector)
+            if await surface.query_selector(stop_btn_selector):
+                await surface.click(stop_btn_selector)
                 logger.info("🛑 Đã bấm nút Stop trên phiên MoLab.")
         except Exception:
             pass
 
-        await browser.close()
+        await context.close()
+        if browser:
+            await browser.close()
+        if sync_profile and profile_dir:
+            _sync_profile(profile_dir, download=False)
         return final_result
+
+
+async def setup_molab_login(notebook_url: str, profile_dir: Path, sync_profile: bool = False) -> None:
+    """Open headed Chromium on the interactive Windows runner for first-time login."""
+    try:
+        from playwright.async_api import async_playwright
+    except ImportError:
+        raise RuntimeError("Playwright is required: pip install playwright && playwright install chromium")
+
+    profile_dir.mkdir(parents=True, exist_ok=True)
+    async with async_playwright() as p:
+        context = await p.chromium.launch_persistent_context(
+            user_data_dir=str(profile_dir.resolve()),
+            headless=False,
+            viewport={"width": 1440, "height": 900},
+        )
+        page = context.pages[0] if context.pages else await context.new_page()
+        await page.goto(notebook_url, wait_until="domcontentloaded", timeout=90000)
+        print("Sign in in the visible Chromium window. Keep the window open until the notebook loads.", flush=True)
+        try:
+            await _notebook_surface(page, timeout_ms=15 * 60 * 1000)
+            if not any("preview.sb.molab.run" in frame.url for frame in page.frames):
+                raise RuntimeError("MoLab notebook preview did not load; finish sign-in and retry setup-molab-login.")
+            print("MoLab notebook frame detected; waiting until the NovelReader app is ready.", flush=True)
+            surface = await _notebook_surface(page)
+            await surface.wait_for_selector("#novelreader-container, .marimo-app, [data-marimo-app]", timeout=180000)
+            print("MoLab sign-in is ready; saving profile.", flush=True)
+            await context.close()
+            if sync_profile:
+                _sync_profile(profile_dir, download=False)
+        except Exception:
+            await context.close()
+            raise
 
 
 def main():
@@ -192,12 +363,25 @@ def main():
     parser.add_argument("--file", type=Path, default=None, help="Đường dẫn file truyện (.txt hoặc .epub)")
     parser.add_argument("--config", default=None, help="Đường dẫn file JSON cấu hình hoặc chuỗi JSON")
     parser.add_argument("--storage", default=os.getenv("STORAGE_BACKEND", "huggingface"))
+    parser.add_argument("--profile-dir", type=Path, default=None)
+    parser.add_argument("--job-id", default=os.getenv("NOVELREADER_JOB_ID") or None)
+    parser.add_argument("--login", action="store_true", help="Open a visible browser for first-time manual MoLab sign-in")
+    parser.add_argument("--sync-profile", action="store_true", help="Restore and save an encrypted profile in HF storage")
     parser.add_argument("--headless", action="store_true", default=True)
     parser.add_argument("--no-headless", action="store_false", dest="headless")
     parser.add_argument("--poll-interval", type=int, default=15)
     parser.add_argument("--max-seconds", type=int, default=18000)
 
     args = parser.parse_args()
+
+    profile_dir = args.profile_dir or (
+        Path(os.environ["MOLAB_BROWSER_PROFILE"])
+        if os.getenv("MOLAB_BROWSER_PROFILE")
+        else Path.home() / ".novelreader" / "molab-chromium-profile"
+    )
+    if args.login:
+        asyncio.run(setup_molab_login(args.notebook_url, profile_dir, sync_profile=args.sync_profile))
+        return
 
     config_data = None
     if args.config:
@@ -221,6 +405,9 @@ def main():
             max_duration_seconds=args.max_seconds,
             telegram_bot_token=os.getenv("TELEGRAM_BOT_TOKEN"),
             telegram_chat_id=int(os.getenv("TELEGRAM_CHAT_ID", "0")) if os.getenv("TELEGRAM_CHAT_ID") else None,
+            profile_dir=profile_dir,
+            job_id=args.job_id,
+            sync_profile=args.sync_profile,
         )
     )
 

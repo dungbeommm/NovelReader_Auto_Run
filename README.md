@@ -5,13 +5,13 @@ Hệ thống tự động hóa xử lý tiểu thuyết Trung → Việt và chu
 ## Kiến trúc hệ thống
 
 1. **Telegram Bot**: Nhận file truyện gốc (`.txt` hoặc `.epub`), quản lý cấu hình wizard/preset và gửi job.
-2. **GitHub Actions**: Khởi động máy ảo Ubuntu, cài Chromium và công cụ điều khiển trình duyệt tự động (**Playwright**).
+2. **GitHub Actions**: Poll Telegram trên GitHub-hosted runner; chạy MoLab Browser Controller trên Windows self-hosted runner với profile đăng nhập mã hóa trong Hugging Face.
 3. **MoLab Notebook (`https://molab.marimo.io/notebooks`)**:
    - Truy cập notebook `notebook/NovelReader_Auto_Run.py`.
    - Nạp file truyện và JSON cấu hình trực tiếp hoặc qua bucket.
    - Nhấn **Run** kích hoạt pipeline: phân tích cấu trúc, dịch thuật (HachimiMT), tạo audio (Piper / VieNeu TTS), gộp chương.
    - Hiển thị tiến trình thời gian thực và đồng bộ SQLite checkpoint định kỳ (mỗi 90s).
-   - Tự động nén `result.zip` và đẩy lên Cloud Storage (**Google Drive**, **Hugging Face**, **Cloudflare R2**, **Pixeldrain**).
+   - Tự động nén `result.zip` và lưu cùng job/checkpoint trên Hugging Face bucket.
 4. **Trả kết quả & Giải phóng tài nguyên**:
    - Browser controller lấy link tải công khai và gửi thông báo qua Telegram.
    - Bấm nút **Stop** trên MoLab để ngưng phiên tính toán, tiết kiệm hạn mức tài nguyên GPU/CPU.
@@ -62,3 +62,34 @@ python -m compileall -q app notebook browser tests
 python -m unittest discover -s tests -v
 marimo check notebook/NovelReader_Auto_Run.py
 ```
+
+## Lưu trữ Hugging Face và đăng nhập MoLab lần đầu
+
+GitHub Actions nhận Telegram job; job trình duyệt chạy trên Windows self-hosted runner để có thể mở màn hình đăng nhập MoLab. Sản phẩm, job và checkpoint được lưu trong bucket `uri410/audio`. Bucket đang công khai, vì vậy profile Chromium chỉ được tải lên sau khi mã hóa; khóa giải mã chỉ lưu trong GitHub Actions Secrets.
+
+### Secrets và biến cần cấu hình
+
+Trong GitHub repository → **Settings → Secrets and variables → Actions**, thêm:
+
+- Secret `HF_TOKEN`: Hugging Face token có quyền ghi bucket.
+- Secret `MOLAB_PROFILE_ENCRYPTION_KEY`: tạo một lần bằng lệnh sau trên máy cá nhân rồi lưu nguyên chuỗi kết quả vào secret. Không đăng chuỗi này lên repo hoặc HF:
+
+```powershell
+python -m pip install cryptography
+python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"
+```
+
+- Secret `TELEGRAM_BOT_TOKEN` và `ALLOWED_TELEGRAM_USER_IDS`.
+- Repository variable `HF_BUCKET_ID` để đổi bucket khỏi `uri410/audio` (không bắt buộc).
+- Repository variable `MOLAB_NOTEBOOK_URL` để dùng notebook khác URL mặc định (không bắt buộc).
+
+Đặt `HF_TOKEN` trong Secrets của notebook MoLab nữa, vì notebook chạy trong môi trường MoLab riêng. Token cần quyền ghi bucket.
+
+### Cài Windows runner có màn hình
+
+1. Dùng Windows VM có Remote Desktop. Cài Python 3.12 và đăng ký VM làm GitHub self-hosted Actions runner với labels `self-hosted`, `Windows`, `molab-vm`.
+2. Đăng nhập Windows bằng Remote Desktop và chạy agent runner trong desktop người dùng hiện tại, ví dụ `run.cmd`. Không chạy runner dưới dạng Windows Service cho bước đăng nhập đầu tiên; service chạy trong session nền nên cửa sổ Chromium không hiện trên desktop.
+3. Trong GitHub → **Actions → NovelReader automation → Run workflow**, chọn `setup-molab-login`. Job mở Chromium trên màn hình VM. Đăng nhập MoLab và chờ notebook hiện ra; job sẽ tự mã hóa rồi tải profile lên HF.
+4. Giữ runner online. Khi gửi truyện cho Telegram bot, GitHub-hosted poller tạo job trên HF và phát `repository_dispatch`; Windows runner khôi phục profile từ HF, mở notebook và chờ job hoàn tất.
+
+Nếu cần đăng nhập lại, chạy lại `setup-molab-login`. Phải giữ nguyên `MOLAB_PROFILE_ENCRYPTION_KEY` để khôi phục profile. Nếu mất khóa, xóa `novelreader/auth/molab-profile.enc` khỏi bucket rồi đăng nhập lại để tạo profile mới. Do bucket công khai, người khác có thể tải ciphertext; họ vẫn cần khóa bí mật để giải mã.
