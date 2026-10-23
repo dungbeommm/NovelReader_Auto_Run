@@ -175,8 +175,9 @@ class TelegramBot:
     def _handle_document(self, message: dict[str, Any], user_id: str) -> None:
         doc = message.get("document", {})
         name = doc.get("file_name", "")
-        if not name.lower().endswith(".epub"):
-            self.send(message["chat"]["id"], "Chỉ nhận file EPUB. Hãy gửi truyện gốc dạng .epub.")
+        ext = Path(name).suffix.lower()
+        if ext not in (".epub", ".txt"):
+            self.send(message["chat"]["id"], "Chỉ nhận file .epub hoặc .txt. Hãy gửi truyện gốc dạng EPUB hoặc Text.")
             return
         if int(doc.get("file_size", 0)) > MAX_TELEGRAM_DOWNLOAD:
             self.send(message["chat"]["id"], "File vượt giới hạn tải Telegram 20 MB. Hãy dùng EPUB nhỏ hơn.")
@@ -193,10 +194,11 @@ class TelegramBot:
             raise ValueError("Downloaded file exceeds Telegram's 20 MB limit")
         job_id = str(uuid.uuid4())
         folder = self.storage.ensure_folder(job_id, self.jobs_folder)
-        temp = Path("/tmp") / f"{job_id}.epub"
+        storage_filename = f"source{ext}"
+        temp = Path("/tmp") / f"{job_id}{ext}"
         temp.write_bytes(data)
         try:
-            uploaded = self.storage.upload(temp, folder, "source.epub")
+            uploaded = self.storage.upload(temp, folder, storage_filename)
         finally:
             temp.unlink(missing_ok=True)
         user = self._user(user_id)

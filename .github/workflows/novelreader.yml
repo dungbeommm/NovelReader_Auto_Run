@@ -6,16 +6,19 @@ on:
   pull_request:
   schedule:
     - cron: "*/5 * * * *"
+  repository_dispatch:
+    types: [novelreader_job, run_molab]
   workflow_dispatch:
     inputs:
       mode:
-        description: Check storage or poll Telegram once
+        description: Workflow execution mode
         required: true
         default: health-check
         type: choice
         options:
           - health-check
           - poll-telegram
+          - run-molab-browser
 
 permissions:
   contents: read
@@ -31,7 +34,7 @@ jobs:
           python-version: "3.12"
           cache: pip
       - run: pip install -r requirements-dev.txt
-      - run: python -m compileall -q app notebook tests
+      - run: python -m compileall -q app notebook browser tests
       - run: python -m unittest discover -s tests -v
       - run: marimo check notebook/NovelReader_Auto_Run.py
 
@@ -57,6 +60,8 @@ jobs:
           HF_BUCKET_ID: ${{ vars.HF_BUCKET_ID || secrets.HF_BUCKET_ID || 'uri410/audio' }}
           HF_ROOT_PREFIX: ${{ vars.HF_ROOT_PREFIX || secrets.HF_ROOT_PREFIX }}
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
+          GDRIVE_OAUTH_TOKEN_JSON: ${{ secrets.GDRIVE_OAUTH_TOKEN_JSON }}
+          GDRIVE_ROOT_FOLDER_ID: ${{ vars.GDRIVE_ROOT_FOLDER_ID || secrets.GDRIVE_ROOT_FOLDER_ID }}
           R2_ACCOUNT_ID: ${{ vars.R2_ACCOUNT_ID || secrets.R2_ACCOUNT_ID }}
           R2_BUCKET: ${{ vars.R2_BUCKET || secrets.R2_BUCKET }}
           R2_ROOT_PREFIX: ${{ vars.R2_ROOT_PREFIX || secrets.R2_ROOT_PREFIX }}
@@ -65,6 +70,34 @@ jobs:
           PIXELDRAIN_API_KEY: ${{ secrets.PIXELDRAIN_API_KEY }}
           PIXELDRAIN_ROOT_PATH: ${{ vars.PIXELDRAIN_ROOT_PATH }}
         run: python -m app.telegram_bot --poll-seconds 220
+
+  run-molab-browser:
+    if: github.event_name == 'repository_dispatch' || (github.event_name == 'workflow_dispatch' && inputs.mode == 'run-molab-browser')
+    runs-on: ubuntu-latest
+    timeout-minutes: 330
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - name: Install dependencies and Playwright Chromium
+        run: |
+          pip install -r requirements.txt playwright
+          playwright install --with-deps chromium
+      - name: Run MoLab Browser Automation
+        env:
+          MOLAB_NOTEBOOK_URL: ${{ vars.MOLAB_NOTEBOOK_URL || 'https://molab.marimo.io/notebooks' }}
+          STORAGE_BACKEND: ${{ vars.STORAGE_BACKEND || 'huggingface' }}
+          HF_BUCKET_ID: ${{ vars.HF_BUCKET_ID || secrets.HF_BUCKET_ID || 'uri410/audio' }}
+          HF_ROOT_PREFIX: ${{ vars.HF_ROOT_PREFIX || secrets.HF_ROOT_PREFIX }}
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+          GDRIVE_OAUTH_TOKEN_JSON: ${{ secrets.GDRIVE_OAUTH_TOKEN_JSON }}
+          GDRIVE_ROOT_FOLDER_ID: ${{ vars.GDRIVE_ROOT_FOLDER_ID || secrets.GDRIVE_ROOT_FOLDER_ID }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ github.event.client_payload.chat_id || secrets.TELEGRAM_CHAT_ID }}
+        run: |
+          python -m browser.molab_controller --notebook-url "${MOLAB_NOTEBOOK_URL}" --storage "${STORAGE_BACKEND}"
 
   health-check:
     if: github.event_name == 'workflow_dispatch' && inputs.mode == 'health-check'
@@ -82,6 +115,8 @@ jobs:
           HF_BUCKET_ID: ${{ vars.HF_BUCKET_ID || secrets.HF_BUCKET_ID || 'uri410/audio' }}
           HF_ROOT_PREFIX: ${{ vars.HF_ROOT_PREFIX || secrets.HF_ROOT_PREFIX }}
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
+          GDRIVE_OAUTH_TOKEN_JSON: ${{ secrets.GDRIVE_OAUTH_TOKEN_JSON }}
+          GDRIVE_ROOT_FOLDER_ID: ${{ vars.GDRIVE_ROOT_FOLDER_ID || secrets.GDRIVE_ROOT_FOLDER_ID }}
           R2_ACCOUNT_ID: ${{ vars.R2_ACCOUNT_ID || secrets.R2_ACCOUNT_ID }}
           R2_BUCKET: ${{ vars.R2_BUCKET || secrets.R2_BUCKET }}
           R2_ROOT_PREFIX: ${{ vars.R2_ROOT_PREFIX || secrets.R2_ROOT_PREFIX }}

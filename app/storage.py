@@ -14,4 +14,7 @@ def create_store():
         return R2Store()
     if backend == "pixeldrain":
         return PixeldrainStore()
-    raise ValueError("STORAGE_BACKEND must be huggingface, r2 or pixeldrain")
+    if backend in ("gdrive", "drive", "google_drive"):
+        from app.drive import DriveStore
+        return DriveStore()
+    raise ValueError("STORAGE_BACKEND must be huggingface, gdrive, r2 or pixeldrain")

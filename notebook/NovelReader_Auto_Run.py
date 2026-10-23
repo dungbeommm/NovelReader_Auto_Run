@@ -1,37 +1,58 @@
-"""MoLab notebook worker. Configure Hugging Face bucket access before running."""
+"""MoLab notebook worker and interactive runner for NovelReader.
+Designed for both automated browser control (Chromium / Playwright in GitHub Actions)
+and direct interactive execution on MoLab (https://molab.marimo.io).
+"""
 import marimo
 
 __generated_with = "0.25.2"
-app = marimo.App(width="full")
+app = marimo.App(
+    width="full",
+    app_title="NovelReader AI — MoLab Auto Run Edition"
+)
 
 
 @app.cell
-def _(mo):
+def title_cell(mo):
     mo.md(r"""
-    # NovelReader Auto Run
+    # ⚡ NovelReader AI — MoLab Auto Run Edition
 
-    Notebook worker cho job Telegram. Worker đọc manifest và đồng bộ checkpoint, kết quả
-    vào Hugging Face Storage Bucket `uri410/audio`. Hãy cấu hình `HF_TOKEN` có quyền ghi
-    trong runtime MoLab trước khi chạy notebook.
+    Hệ thống dịch thuật & tạo audio tự động: **Telegram Bot ➔ GitHub Actions ➔ Chromium Browser ➔ MoLab Notebook ➔ Cloud Storage**.
+    
+    *Hỗ trợ cả chế độ điều khiển tự động qua trình duyệt (**Browser Automation**) và chế độ công nhân nền (**Background Worker**).*
     """)
     return
 
 
 @app.cell
-def _():
-    import importlib.util
-    import subprocess as _subprocess
-    import sys as _sys
-    for package in ("requests", "boto3"):
-        if importlib.util.find_spec(package) is None:
-            _subprocess.run([_sys.executable, "-m", "pip", "install", package], check=True)
-    _subprocess.run([_sys.executable, "-m", "pip", "install", "huggingface_hub>=1.6,<2"], check=True)
-    requests_ready = True
-    return (requests_ready,)
+def import_marimo():
+    import marimo as mo
+    return (mo,)
 
 
 @app.cell
-def _(requests_ready, mo):
+def install_deps():
+    import importlib.util
+    import subprocess as _subprocess
+    import sys as _sys
+
+    packages = ["requests", "boto3", "huggingface_hub>=1.6,<2"]
+    for package in packages:
+        pkg_name = package.split(">=")[0].split("<")[0]
+        if importlib.util.find_spec(pkg_name) is None:
+            _subprocess.run([_sys.executable, "-m", "pip", "install", "-q", package], check=False)
+
+    for g_pkg in ["google-api-python-client", "google-auth-httplib2", "google-auth-oauthlib"]:
+        pkg_clean = g_pkg.replace("-", "_")
+        if importlib.util.find_spec(pkg_clean) is None:
+            _subprocess.run([_sys.executable, "-m", "pip", "install", "-q", g_pkg], check=False)
+
+    deps_ready = True
+    return (deps_ready,)
+
+
+@app.cell
+def shared_imports(deps_ready):
+    assert deps_ready
     import hashlib
     import json
     import logging
@@ -40,6 +61,7 @@ def _(requests_ready, mo):
     import sqlite3
     import subprocess
     import sys
+    import tempfile
     import threading
     import time
     import traceback
@@ -47,38 +69,120 @@ def _(requests_ready, mo):
     import zipfile
     from datetime import datetime, timezone
     from pathlib import Path
+    from urllib.parse import quote
 
-    import marimo as mo
     import requests
     import boto3
     from botocore.client import Config
     from botocore.exceptions import ClientError
     from huggingface_hub import batch_bucket_files, bucket_info, download_bucket_files, list_bucket_tree
     from huggingface_hub.errors import EntryNotFoundError
-    import tempfile
-    from urllib.parse import quote
 
-    logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
-    worker_log = logging.getLogger("novelreader.worker")
-    worker_stop = threading.Event()
-    worker_lock = threading.Lock()
-    worker_state = {"status": "initializing", "job_id": None, "message": ""}
+    logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
+    worker_log = logging.getLogger("novelreader.molab")
+
     WORK_ROOT = Path("/tmp/novelreader-auto-run")
     WORK_ROOT.mkdir(parents=True, exist_ok=True)
     NOVELREADER_REPO = "dungbeommm/NovelReader_Translate"
     NOVELREADER_COMMIT = os.getenv("NOVELREADER_COMMIT", "920a1d4464e377d6c03fd53da017f2a00b709b66")
     BOT_APP_FOLDER = "NovelReader_Auto_Run"
 
-    def require_api_key():
-        key = os.environ.get("PIXELDRAIN_API_KEY", "").strip()
-        if not key:
-            raise RuntimeError("PIXELDRAIN_API_KEY is missing")
-        return key
+    DEFAULT_JOB_CONFIG = {
+        "source_language": "zh",
+        "target_language": "vi",
+        "compute": {"provider": "molab", "device": "auto"},
+        "translation": {
+            "enabled": True,
+            "backend": "ct2",
+            "model": "HachimiMT-60-QT",
+            "beam_size": 2,
+            "chunk_mode": "sentence",
+            "normalize_mode": "auto",
+            "glossary": "",
+            "honorific_mode": "safe",
+            "pronoun_harmonizer": True,
+        },
+        "audio": {
+            "enabled": True,
+            "engine": "piper",
+            "voice": "ngochuyennew",
+            "speed": 1.0,
+            "format": "mp3",
+            "bitrate": "96k",
+            "sample_rate": 0,
+            "workers": 1,
+            "noise_scale": 0.667,
+            "noise_w_scale": 0.8,
+            "vieneu_temperature": 0.8,
+            "vieneu_top_p": 0.95,
+            "vieneu_batch_size": 8,
+        },
+        "merge": {"enabled": True, "chapters_per_file": 50},
+        "export": {"txt": True, "epub": True, "chapter_audio": True, "keep_chapter_audio": True},
+        "storage": {"sharing": "link_reader"},
+    }
 
+    return (
+        BOT_APP_FOLDER,
+        ClientError,
+        Config,
+        DEFAULT_JOB_CONFIG,
+        EntryNotFoundError,
+        NOVELREADER_COMMIT,
+        NOVELREADER_REPO,
+        Path,
+        WORK_ROOT,
+        batch_bucket_files,
+        boto3,
+        bucket_info,
+        datetime,
+        download_bucket_files,
+        hashlib,
+        json,
+        list_bucket_tree,
+        logging,
+        os,
+        quote,
+        requests,
+        shutil,
+        sqlite3,
+        subprocess,
+        sys,
+        tempfile,
+        threading,
+        time,
+        timezone,
+        traceback,
+        uuid,
+        worker_log,
+        zipfile,
+    )
+
+
+@app.cell
+def storage_classes(
+    ClientError,
+    Config,
+    EntryNotFoundError,
+    Path,
+    batch_bucket_files,
+    boto3,
+    bucket_info,
+    download_bucket_files,
+    json,
+    list_bucket_tree,
+    os,
+    quote,
+    requests,
+    tempfile,
+):
     class PixeldrainStore:
         def __init__(self, api_key: str | None = None, root_id: str | None = None) -> None:
             self.session = requests.Session()
-            self.session.auth = ("", api_key or require_api_key())
+            key = api_key or os.environ.get("PIXELDRAIN_API_KEY", "").strip()
+            if not key:
+                raise RuntimeError("PIXELDRAIN_API_KEY is missing")
+            self.session.auth = ("", key)
             self.root_id = (root_id or os.environ.get("PIXELDRAIN_ROOT_PATH") or "/me").rstrip("/")
             if not self.root_id.startswith("/me") or (self.root_id != "/me" and not self.root_id.startswith("/me/")):
                 raise ValueError("PIXELDRAIN_ROOT_PATH must be under /me")
@@ -151,8 +255,7 @@ def _(requests_ready, mo):
             return target
 
         def share_link_reader(self, path: str) -> str:
-            node = self._request("POST", path, files={"action": (None, "update"),
-                                                      "shared": (None, "true")}).json()
+            node = self._request("POST", path, files={"action": (None, "update"), "shared": (None, "true")}).json()
             return f"https://pixeldrain.com/d/{node['id']}"
 
     class R2Store:
@@ -298,15 +401,188 @@ def _(requests_ready, mo):
             encoded = "/".join(quote(segment, safe="") for segment in key.split("/"))
             return f"https://huggingface.co/buckets/{self.bucket}/resolve/{encoded}"
 
-    def create_store():
-        backend = os.environ.get("STORAGE_BACKEND", "huggingface").strip().lower()
-        if backend in ("huggingface", "hf"):
+    class DriveStore:
+        def __init__(self):
+            token = os.environ.get("GDRIVE_OAUTH_TOKEN_JSON", "").strip()
+            if not token:
+                raise RuntimeError("GDRIVE_OAUTH_TOKEN_JSON is missing")
+            from google.oauth2.credentials import Credentials
+            from google.auth.transport.requests import Request
+            from googleapiclient.discovery import build
+
+            data = json.loads(token)
+            self.credentials = Credentials.from_authorized_user_info(data, scopes=["https://www.googleapis.com/auth/drive"])
+            if self.credentials.expired and self.credentials.refresh_token:
+                self.credentials.refresh(Request())
+            self.api = build("drive", "v3", credentials=self.credentials, cache_discovery=False)
+            self.root_id = os.environ.get("GDRIVE_ROOT_FOLDER_ID", "").strip() or "root"
+
+        def _list(self, query):
+            return self.api.files().list(
+                q=query, fields="files(id,name,mimeType,webViewLink)", pageSize=100,
+                supportsAllDrives=True, includeItemsFromAllDrives=True
+            ).execute().get("files", [])
+
+        def list_children(self, parent_id):
+            rows = self._list(f"'{parent_id}' in parents and trashed=false")
+            return [{"name": f["name"], "path": f["id"], "type": "dir" if f.get("mimeType") == "application/vnd.google-apps.folder" else "file", "id": f["id"]} for f in rows]
+
+        def ensure_folder(self, name, parent_id=None):
+            parent = parent_id or self.root_id
+            safe = name.replace("'", "\\'")
+            found = self._list(f"'{parent}' in parents and name='{safe}' and mimeType='application/vnd.google-apps.folder' and trashed=false")
+            if found:
+                return found[0]["id"]
+            created = self.api.files().create(
+                body={"name": name, "mimeType": "application/vnd.google-apps.folder", "parents": [parent]},
+                fields="id", supportsAllDrives=True
+            ).execute()
+            return created["id"]
+
+        def child(self, parent_id, name):
+            return parent_id.rstrip("/") + "/" + name
+
+        def find(self, parent_id, name):
+            safe = name.replace("'", "\\'")
+            rows = self._list(f"'{parent_id}' in parents and name='{safe}' and trashed=false")
+            if not rows:
+                return None
+            f = rows[0]
+            return {"name": f["name"], "path": f["id"], "type": "dir" if f.get("mimeType") == "application/vnd.google-apps.folder" else "file", "id": f["id"]}
+
+        def put_json(self, parent_id, name, data):
+            from googleapiclient.http import MediaInMemoryUpload
+            body = json.dumps(data, ensure_ascii=False, indent=2).encode("utf-8")
+            media = MediaInMemoryUpload(body, mimetype="application/json", resumable=True)
+            existing = self.find(parent_id, name)
+            if existing:
+                return self.api.files().update(fileId=existing["id"], media_body=media, fields="id", supportsAllDrives=True).execute()["id"]
+            return self.api.files().create(body={"name": name, "parents": [parent_id]}, media_body=media, fields="id", supportsAllDrives=True).execute()["id"]
+
+        def get_json(self, parent_id, name, default=None):
+            found = self.find(parent_id, name)
+            if not found:
+                return default
+            content = self.api.files().get_media(fileId=found["id"], supportsAllDrives=True).execute()
+            return json.loads(content.decode("utf-8"))
+
+        def upload(self, path, parent_id, name=None):
+            from googleapiclient.http import MediaFileUpload
+            actual_name = name or path.name
+            media = MediaFileUpload(str(path), resumable=True, chunksize=8 * 1024 * 1024)
+            existing = self.find(parent_id, actual_name)
+            if existing:
+                res = self.api.files().update(fileId=existing["id"], media_body=media, fields="id,name,webViewLink", supportsAllDrives=True).execute()
+            else:
+                res = self.api.files().create(body={"name": actual_name, "parents": [parent_id]}, media_body=media, fields="id,name,webViewLink", supportsAllDrives=True).execute()
+            return {"path": res["id"], "id": res["id"], "webViewLink": res.get("webViewLink", "")}
+
+        def download(self, file_id, target):
+            from googleapiclient.http import MediaIoBaseDownload
+            request = self.api.files().get_media(fileId=file_id, supportsAllDrives=True)
+            target.parent.mkdir(parents=True, exist_ok=True)
+            with target.open("wb") as stream:
+                downloader = MediaIoBaseDownload(stream, request, chunksize=8 * 1024 * 1024)
+                done = False
+                while not done:
+                    _, done = downloader.next_chunk()
+            return target
+
+        def share_link_reader(self, folder_id):
+            result_zip = self.find(folder_id, "result.zip")
+            file_id = result_zip["id"] if result_zip else folder_id
+            try:
+                self.api.permissions().create(fileId=file_id, body={"type": "anyone", "role": "reader"}, supportsAllDrives=True).execute()
+            except Exception:
+                pass
+            return self.api.files().get(fileId=file_id, fields="webViewLink", supportsAllDrives=True).execute().get("webViewLink", "")
+
+    class LocalStore:
+        def __init__(self, base_dir: Path | None = None):
+            self.root_id = str(base_dir or Path("/tmp/novelreader-local-store"))
+            Path(self.root_id).mkdir(parents=True, exist_ok=True)
+
+        @staticmethod
+        def child(parent, name):
+            return str(Path(parent) / name)
+
+        def ensure_folder(self, name, parent_id=None):
+            p = Path(parent_id or self.root_id) / name
+            p.mkdir(parents=True, exist_ok=True)
+            return str(p)
+
+        def list_children(self, parent_id):
+            p = Path(parent_id)
+            if not p.exists():
+                return []
+            return [{"name": f.name, "path": str(f), "type": "dir" if f.is_dir() else "file"} for f in p.iterdir()]
+
+        def find(self, parent_id, name):
+            target = Path(parent_id) / name
+            if not target.exists():
+                return None
+            return {"name": target.name, "path": str(target), "type": "dir" if target.is_dir() else "file"}
+
+        def put_json(self, parent_id, name, data):
+            p = Path(parent_id) / name
+            p.parent.mkdir(parents=True, exist_ok=True)
+            p.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8")
+            return str(p)
+
+        def get_json(self, parent_id, name, default=None):
+            p = Path(parent_id) / name
+            if not p.exists():
+                return default
+            return json.loads(p.read_text(encoding="utf-8"))
+
+        def upload(self, path, parent_id, name=None):
+            dest = Path(parent_id) / (name or path.name)
+            dest.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(str(path), str(dest))
+            return {"path": str(dest)}
+
+        def download(self, file_id, target):
+            target.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(file_id, str(target))
+            return target
+
+        def share_link_reader(self, path):
+            zip_target = Path(path) / "result.zip"
+            return f"file://{zip_target.resolve()}"
+
+    def create_store(backend: str | None = None):
+        selected = (backend or os.environ.get("STORAGE_BACKEND", "huggingface")).strip().lower()
+        if selected in ("huggingface", "hf"):
             return HuggingFaceStore()
-        if backend == "r2":
+        if selected in ("gdrive", "drive", "google_drive"):
+            return DriveStore()
+        if selected == "r2":
             return R2Store()
-        if backend == "pixeldrain":
+        if selected == "pixeldrain":
             return PixeldrainStore()
-        raise ValueError("STORAGE_BACKEND must be huggingface, r2 or pixeldrain")
+        if selected == "local":
+            return LocalStore()
+        raise ValueError(f"STORAGE_BACKEND '{selected}' must be huggingface, gdrive, r2, pixeldrain, or local")
+
+    return DriveStore, HuggingFaceStore, LocalStore, PixeldrainStore, R2Store, create_store
+
+
+@app.cell
+def pipeline_helpers(
+    NOVELREADER_COMMIT,
+    NOVELREADER_REPO,
+    Path,
+    WORK_ROOT,
+    datetime,
+    os,
+    sqlite3,
+    subprocess,
+    sys,
+    timezone,
+    worker_log,
+):
+    def now_iso():
+        return datetime.now(timezone.utc).isoformat(timespec="seconds")
 
     def upload_paths(api, local_root, parent_id):
         root = Path(local_root)
@@ -329,8 +605,11 @@ def _(requests_ready, mo):
                     api.download(row["path"], target)
         walk(remote_root, Path(local_root))
 
-    def now_iso():
-        return datetime.now(timezone.utc).isoformat(timespec="seconds")
+    def backup_database(store, target):
+        target = Path(target)
+        target.parent.mkdir(parents=True, exist_ok=True)
+        with sqlite3.connect(str(store.path)) as source, sqlite3.connect(str(target)) as destination:
+            source.backup(destination)
 
     def ensure_novelreader():
         repo_dir = WORK_ROOT / "NovelReader"
@@ -342,7 +621,8 @@ def _(requests_ready, mo):
         if not marker.exists():
             subprocess.run([sys.executable, "-m", "pip", "install", "-r", str(repo_dir / "requirements.txt")], check=True)
             marker.touch()
-        sys.path.insert(0, str(repo_dir))
+        if str(repo_dir) not in sys.path:
+            sys.path.insert(0, str(repo_dir))
         return repo_dir
 
     def map_config(config):
@@ -361,25 +641,61 @@ def _(requests_ready, mo):
             "vieneu_batch_size": a["vieneu_batch_size"],
         }
 
-    def backup_database(store, target):
-        target = Path(target)
-        target.parent.mkdir(parents=True, exist_ok=True)
-        with sqlite3.connect(str(store.path)) as source, sqlite3.connect(str(target)) as destination:
-            source.backup(destination)
-
     def update_manifest(api, folder_id, manifest):
         manifest["updated_at"] = now_iso()
         api.put_json(folder_id, "job.json", manifest)
 
-    def process_job(api, folder_id, manifest, repo_dir):
+    return (
+        backup_database,
+        ensure_novelreader,
+        map_config,
+        now_iso,
+        restore_paths,
+        update_manifest,
+        upload_paths,
+    )
+
+
+@app.cell
+def execution_core(
+    WORK_ROOT,
+    backup_database,
+    ensure_novelreader,
+    hashlib,
+    map_config,
+    now_iso,
+    os,
+    restore_paths,
+    time,
+    traceback,
+    update_manifest,
+    upload_paths,
+    worker_log,
+    zipfile,
+):
+    def process_job_pipeline(api, folder_id, manifest, progress_callback=None):
         job_id = manifest["job_id"]
-        worker_state.update(status="running", job_id=job_id, message="Đang tải EPUB/checkpoint")
+        if progress_callback:
+            progress_callback(status="RUNNING", message="Đang khởi tạo NovelReader core và tải truyện", progress=0, done=0, total=0)
+        repo_dir = ensure_novelreader()
         home = WORK_ROOT / job_id
         home.mkdir(parents=True, exist_ok=True)
-        source_path = api.download(manifest["input"].get("storage_path", manifest["input"].get("pixeldrain_path")), home / "source.epub")
+        
+        orig_name = manifest["input"].get("name", "source.epub")
+        ext = ".txt" if orig_name.lower().endswith(".txt") else ".epub"
+        source_target = home / f"source{ext}"
+
+        raw_storage_path = manifest["input"].get("storage_path") or manifest["input"].get("pixeldrain_path")
+        if raw_storage_path and os.path.exists(raw_storage_path):
+            source_path = source_target
+            if str(Path(raw_storage_path).resolve()) != str(source_target.resolve()):
+                source_target.write_bytes(Path(raw_storage_path).read_bytes())
+        else:
+            source_path = api.download(raw_storage_path, source_target)
+
         actual_hash = hashlib.sha256(source_path.read_bytes()).hexdigest()
-        if actual_hash != manifest["input"]["sha256"]:
-            raise ValueError("SHA-256 EPUB does not match manifest")
+        if manifest["input"].get("sha256") and actual_hash != manifest["input"]["sha256"]:
+            raise ValueError("SHA-256 truyện gốc không khớp với manifest")
 
         data_root = home / "data"
         data_root.mkdir(exist_ok=True)
@@ -392,6 +708,7 @@ def _(requests_ready, mo):
 
         os.environ["NOVEL_OUTPUT_TEXT"] = str(data_root / "output_text")
         os.environ["NOVEL_OUTPUT_AUDIO"] = str(data_root / "output_audio")
+        
         from storage.store import Store
         from translation.core.novel_files import parse_file
         from workflows.jobs import Job
@@ -400,36 +717,42 @@ def _(requests_ready, mo):
         if not store.book():
             chapters, encoding = parse_file(source_path.name, source_path.read_bytes())
             store.replace(source_path.name, encoding, chapters)
+        
         chapters = store.list()
-        failed_existing = [c for c in chapters if c["status"] == "error"]
-        if failed_existing:
-            manifest.setdefault("errors", [])
-            seen = {(e.get("stage"), e.get("chapter_id")) for e in manifest["errors"]}
-            for chapter in failed_existing:
-                if ("translate", chapter["id"]) not in seen:
-                    manifest["errors"].append({"chapter_id": chapter["id"], "chapter": chapter["position"],
-                        "stage": "translate", "detail": chapter.get("error", "translation error")})
+        total_chapters = len(chapters)
         manifest["status"] = "RUNNING"
-        manifest["progress"] = {"total_chapters": len(chapters),
+        manifest["progress"] = {
+            "total_chapters": total_chapters,
             "done_chapters": sum(c["status"] == "done" for c in chapters),
             "failed_chapters": sum(c["status"] == "error" for c in chapters),
-            "last_chapter": max((c["position"] for c in chapters if c["status"] == "done"), default=None)}
+            "last_chapter": max((c["position"] for c in chapters if c["status"] == "done"), default=None),
+        }
         update_manifest(api, folder_id, manifest)
 
         config = map_config(manifest["config"])
         job = Job(store)
         job.start(config, reset=False)
+
         last_snapshot = 0.0
         observed = None
         synced = {}
+
         while job.active:
-            time.sleep(5)
+            time.sleep(3)
             current = store.list()
+            done_count = sum(c["status"] == "done" for c in current)
+            failed_count = sum(c["status"] == "error" for c in current)
+            pct = int((done_count / total_chapters * 100)) if total_chapters else 0
+            
+            if progress_callback:
+                progress_callback(status="RUNNING", message=f"Đang dịch & tạo audio: {done_count}/{total_chapters} chương", progress=pct, done=done_count, total=total_chapters)
+
             signature = tuple((c["id"], c["status"], c.get("audio_status")) for c in current)
             if signature != observed or time.monotonic() - last_snapshot >= 90:
                 observed = signature
                 backup_database(store, data_root / "checkpoint.sqlite3")
                 api.upload(data_root / "checkpoint.sqlite3", folder_id)
+
                 for output_name in ("output_text", "output_audio"):
                     root = data_root / output_name
                     for path in root.rglob("*") if root.exists() else ():
@@ -443,37 +766,21 @@ def _(requests_ready, mo):
                             remote = api.ensure_folder(segment, remote)
                         api.upload(path, remote)
                         synced[str(path)] = signature_file
-                progress = {"total_chapters": len(current),
-                    "done_chapters": sum(c["status"] == "done" for c in current),
-                    "failed_chapters": sum(c["status"] == "error" for c in current),
-                    "last_chapter": max((c["position"] for c in current if c["status"] == "done"), default=None)}
-                manifest["progress"] = progress
-                known = {(e.get("stage"), e.get("chapter_id")) for e in manifest.get("errors", [])}
-                for chapter in current:
-                    if chapter["status"] == "error" and ("translate", chapter["id"]) not in known:
-                        manifest.setdefault("errors", []).append({"chapter_id": chapter["id"], "chapter": chapter["position"],
-                            "stage": "translate", "detail": chapter.get("error", "translation error")})
-                        known.add(("translate", chapter["id"]))
-                    if chapter.get("audio_status") == "error" and ("audio", chapter["id"]) not in known:
-                        manifest.setdefault("errors", []).append({"chapter_id": chapter["id"], "chapter": chapter["position"],
-                            "stage": "audio", "detail": "TTS thất bại; xem log MoLab"})
-                        known.add(("audio", chapter["id"]))
+
+                manifest["progress"] = {
+                    "total_chapters": total_chapters,
+                    "done_chapters": done_count,
+                    "failed_chapters": failed_count,
+                    "last_chapter": max((c["position"] for c in current if c["status"] == "done"), default=None),
+                }
                 update_manifest(api, folder_id, manifest)
                 last_snapshot = time.monotonic()
 
         final_chapters = store.list()
-        known = {(e.get("stage"), e.get("chapter_id")) for e in manifest.get("errors", [])}
-        for chapter in final_chapters:
-            if chapter["status"] == "error" and ("translate", chapter["id"]) not in known:
-                manifest.setdefault("errors", []).append({"chapter_id": chapter["id"], "chapter": chapter["position"],
-                    "stage": "translate", "detail": chapter.get("error", "translation error")})
-            if chapter.get("audio_status") == "error" and ("audio", chapter["id"]) not in known:
-                manifest.setdefault("errors", []).append({"chapter_id": chapter["id"], "chapter": chapter["position"],
-                    "stage": "audio", "detail": "TTS thất bại; xem log MoLab"})
-        if job.status == "error" and not any(c["status"] == "error" or c.get("audio_status") == "error" for c in final_chapters):
-            manifest.setdefault("errors", []).append({"stage": "worker", "detail": job.message or "NovelReader job failed"})
+        done_final = sum(c["status"] == "done" for c in final_chapters)
         backup_database(store, data_root / "checkpoint.sqlite3")
         api.upload(data_root / "checkpoint.sqlite3", folder_id)
+
         book = store.book()
         try:
             from translation.core.novel_files import export_txt, export_epub
@@ -484,12 +791,17 @@ def _(requests_ready, mo):
         except Exception:
             worker_log.exception("Book export failed")
             manifest.setdefault("errors", []).append({"stage": "export", "detail": traceback.format_exc()[-3000:]})
+
         manifest["status"] = "UPLOADING"
+        if progress_callback:
+            progress_callback(status="UPLOADING", message="Đang nén kết quả và đồng bộ lên Cloud Storage...", progress=95, done=done_final, total=total_chapters)
         update_manifest(api, folder_id, manifest)
+
         result_folder = api.ensure_folder("result", folder_id)
         upload_paths(api, data_root / "output_text", result_folder)
         output_audio = data_root / "output_audio"
         export_audio = manifest["config"]["export"]
+
         for path in sorted(p for p in output_audio.rglob("*") if p.is_file() and not p.is_symlink()) if output_audio.exists() else ():
             rel = path.relative_to(output_audio)
             is_group = "audio_gop" in rel.parts
@@ -499,9 +811,11 @@ def _(requests_ready, mo):
             for segment in rel.parts[:-1]:
                 dest = api.ensure_folder(segment, dest)
             api.upload(path, dest)
+
         for artifact in (data_root / "translated.txt", data_root / "translated.epub"):
             if artifact.exists():
                 api.upload(artifact, result_folder)
+
         zip_path = data_root / "result.zip"
         with zipfile.ZipFile(zip_path, "w", compression=zipfile.ZIP_STORED, allowZip64=True) as archive:
             for output_name in ("output_text", "output_audio"):
@@ -517,70 +831,295 @@ def _(requests_ready, mo):
             for artifact in (data_root / "translated.txt", data_root / "translated.epub"):
                 if artifact.exists():
                     archive.write(artifact, artifact.name)
+
         api.upload(zip_path, result_folder)
-        sharing = manifest["config"].get("storage", manifest["config"].get("pixeldrain", {})).get("sharing")
+        sharing = manifest["config"].get("storage", {}).get("sharing", "link_reader")
         result_link = api.share_link_reader(result_folder) if sharing == "link_reader" else None
-        progress = {"total_chapters": len(final_chapters), "done_chapters": sum(c["status"] == "done" for c in final_chapters),
-                    "failed_chapters": sum(c["status"] == "error" for c in final_chapters),
-                    "last_chapter": max((c["position"] for c in final_chapters if c["status"] == "done"), default=None)}
-        manifest.update(status="COMPLETED_WITH_ERRORS" if manifest.get("errors") or progress["failed_chapters"] else "COMPLETED",
-            progress=progress, result={"download_link": result_link, "result_path": result_folder,
-                "completed_at": now_iso(), "artifacts": [p.name for p in (data_root / "translated.txt", data_root / "translated.epub") if p.exists()] + ["result.zip"]})
+
+        progress_summary = {
+            "total_chapters": total_chapters,
+            "done_chapters": done_final,
+            "failed_chapters": sum(c["status"] == "error" for c in final_chapters),
+            "last_chapter": max((c["position"] for c in final_chapters if c["status"] == "done"), default=None),
+        }
+        final_status = "COMPLETED_WITH_ERRORS" if manifest.get("errors") or progress_summary["failed_chapters"] else "COMPLETED"
+        manifest.update(
+            status=final_status,
+            progress=progress_summary,
+            result={
+                "download_link": result_link,
+                "result_path": result_folder,
+                "completed_at": now_iso(),
+                "artifacts": [p.name for p in (data_root / "translated.txt", data_root / "translated.epub") if p.exists()] + ["result.zip"]
+            }
+        )
         update_manifest(api, folder_id, manifest)
-        worker_state.update(status="idle", job_id=None, message=f"Hoàn tất {job_id}")
+        
+        if progress_callback:
+            progress_callback(status=final_status, message="Hoàn thành xuất sắc!", progress=100, done=done_final, total=total_chapters, result_link=result_link)
+        return result_link, manifest
 
-    def worker_loop():
-        while not worker_stop.is_set():
-            try:
-                with worker_lock:
-                    api = create_store()
-                    app_id = api.child(api.root_id, BOT_APP_FOLDER)
-                    jobs_id = api.child(app_id, "jobs")
-                    rows = api.list_children(jobs_id)
-                    pending = None
-                    for row in rows:
-                        if row.get("type") != "dir":
-                            continue
-                        manifest = api.get_json(row["path"], "job.json")
-                        if manifest and manifest.get("status") in ("QUEUED", "RUNNING"):
-                            pending = (row["path"], manifest)
-                            break
-                    if pending:
-                        try:
-                            repo_dir = ensure_novelreader()
-                            process_job(api, pending[0], pending[1], repo_dir)
-                        except Exception as exc:
-                            worker_log.exception("Job failed: %s", pending[1]["job_id"])
-                            manifest = api.get_json(pending[0], "job.json", pending[1])
-                            manifest["status"] = "FAILED"
-                            manifest.setdefault("errors", []).append({"stage": "worker", "detail": f"{type(exc).__name__}: {exc}"[:2000]})
-                            update_manifest(api, pending[0], manifest)
-                    else:
-                        worker_state.update(status="idle", job_id=None, message="Waiting for a job")
-            except Exception as exc:
-                worker_log.exception("Worker cycle error")
-                worker_state.update(status="error", message=f"{type(exc).__name__}: {exc}")
-            worker_stop.wait(35)
+    return (process_job_pipeline,)
 
 
-    storage_backend = os.environ.get("STORAGE_BACKEND", "huggingface").strip().lower()
-    if storage_backend in ("huggingface", "hf"):
-        configured = bool(os.environ.get("HF_TOKEN"))
-    elif storage_backend == "pixeldrain":
-        configured = bool(os.environ.get("PIXELDRAIN_API_KEY"))
+@app.cell
+def ui_controls(DEFAULT_JOB_CONFIG, json, mo):
+    file_uploader = mo.ui.file(
+        filetypes=[".txt", ".epub"],
+        multiple=False,
+        label="📂 1. Chọn file truyện gốc (.txt hoặc .epub):"
+    )
+
+    config_input = mo.ui.text_area(
+        value=json.dumps(DEFAULT_JOB_CONFIG, indent=2, ensure_ascii=False),
+        rows=10,
+        label="⚙️ 2. Cấu hình xử lý (JSON):"
+    )
+
+    storage_dropdown = mo.ui.dropdown(
+        options={
+            "Hugging Face Storage Bucket": "huggingface",
+            "Google Drive (OAuth Token)": "gdrive",
+            "Cloudflare R2 (S3 API)": "r2",
+            "Pixeldrain Filesystem": "pixeldrain",
+            "Tải trực tiếp ZIP (Local Session)": "local",
+        },
+        value="Hugging Face Storage Bucket",
+        label="☁️ 3. Dịch vụ lưu trữ kết quả:"
+    )
+
+    run_btn = mo.ui.run_button(
+        label="🚀 BẮT ĐẦU CHẠY NOVELREADER (RUN)",
+        kind="success"
+    )
+
+    stop_btn = mo.ui.button(
+        label="🛑 DỪNG PHIÊN MOLAB (STOP)",
+        kind="danger"
+    )
+
+    return (
+        config_input,
+        file_uploader,
+        run_btn,
+        stop_btn,
+        storage_dropdown,
+    )
+
+
+@app.cell
+def render_dashboard(
+    config_input,
+    file_uploader,
+    mo,
+    run_btn,
+    stop_btn,
+    storage_dropdown,
+):
+    ui_dom = mo.Html(f"""
+    <div id="novelreader-container" style="border: 1px solid #e0e0e0; border-radius: 8px; padding: 18px; margin-bottom: 20px; background: #fafafa;">
+        <h3 style="margin-top: 0; color: #1976d2;">🎛️ Bảng điều khiển NovelReader MoLab</h3>
+        <p style="color: #666; font-size: 14px;">
+            Hệ thống hỗ trợ tự động hóa thông qua Browser Playwright hoặc thao tác trực tiếp.
+        </p>
+        <div id="novelreader-file-input" style="margin-bottom: 14px;">
+            {file_uploader}
+        </div>
+        <div id="novelreader-storage-select" style="margin-bottom: 14px;">
+            {storage_dropdown}
+        </div>
+        <div id="novelreader-config-input" style="margin-bottom: 14px;">
+            {config_input}
+        </div>
+        <div style="display: flex; gap: 12px; margin-top: 16px;">
+            <div id="novelreader-run-btn">
+                {run_btn}
+            </div>
+            <div id="novelreader-stop-btn">
+                {stop_btn}
+            </div>
+        </div>
+    </div>
+    """)
+    mo.output.replace(ui_dom)
+    return (ui_dom,)
+
+
+@app.cell
+def execution_and_background_worker(
+    BOT_APP_FOLDER,
+    DEFAULT_JOB_CONFIG,
+    WORK_ROOT,
+    backend_selector=None,
+    config_input=None,
+    create_store=None,
+    file_uploader=None,
+    hashlib=None,
+    json=None,
+    mo=None,
+    now_iso=None,
+    os=None,
+    process_job_pipeline=None,
+    run_btn=None,
+    stop_btn=None,
+    storage_dropdown=None,
+    threading=None,
+    uuid=None,
+    worker_log=None,
+):
+    selected_backend = storage_dropdown.value if storage_dropdown else "huggingface"
+    runner_state = {
+        "status": "IDLE",
+        "progress": 0,
+        "done": 0,
+        "total": 0,
+        "message": "Sẵn sàng nhận lệnh chạy",
+        "result_link": "",
+        "error": "",
+    }
+
+    if stop_btn and stop_btn.value:
+        runner_state.update(status="STOPPED", message="Đã dừng phiên MoLab theo yêu cầu.")
+        status_html = mo.Html(f"""
+        <div id="novelreader-status" data-status="STOPPED" data-progress="0" data-done="0" data-total="0" data-result-link="" style="padding: 12px; background: #ffebee; border-left: 4px solid #f44336; border-radius: 4px;">
+            <strong>Phiên MoLab đã ngưng hoạt động.</strong>
+        </div>
+        """)
+        mo.output.append(status_html)
+
+    elif run_btn and run_btn.value:
+        try:
+            uploaded_file = file_uploader.value if file_uploader else None
+            file_bytes = None
+            filename = "source.txt"
+
+            if uploaded_file and len(uploaded_file) > 0:
+                first_file = uploaded_file[0]
+                filename = first_file.name
+                file_bytes = first_file.contents
+            else:
+                for candidate in (WORK_ROOT / "source.txt", WORK_ROOT / "source.epub"):
+                    if candidate.exists():
+                        filename = candidate.name
+                        file_bytes = candidate.read_bytes()
+                        break
+
+            if not file_bytes:
+                runner_state.update(status="FAILED", error="Vui lòng tải lên file truyện gốc (.txt hoặc .epub)")
+            else:
+                config_data = json.loads(config_input.value) if config_input and config_input.value else DEFAULT_JOB_CONFIG
+                job_id = str(uuid.uuid4())
+                api = create_store(selected_backend)
+                app_folder = api.ensure_folder(BOT_APP_FOLDER)
+                jobs_folder = api.ensure_folder("jobs", app_folder)
+                folder_id = api.ensure_folder(job_id, jobs_folder)
+
+                ext = ".txt" if filename.lower().endswith(".txt") else ".epub"
+                temp_local = WORK_ROOT / f"{job_id}{ext}"
+                temp_local.write_bytes(file_bytes)
+                uploaded_meta = api.upload(temp_local, folder_id, f"source{ext}")
+
+                manifest = {
+                    "schema_version": 1,
+                    "job_id": job_id,
+                    "owner_id": "browser_runner",
+                    "created_at": now_iso(),
+                    "updated_at": now_iso(),
+                    "status": "QUEUED",
+                    "input": {
+                        "storage_path": uploaded_meta.get("path") or str(temp_local),
+                        "name": filename,
+                        "sha256": hashlib.sha256(file_bytes).hexdigest(),
+                        "size": len(file_bytes),
+                    },
+                    "config": config_data,
+                    "progress": {"total_chapters": 0, "done_chapters": 0, "failed_chapters": 0, "last_chapter": None},
+                    "errors": [],
+                    "result": None,
+                }
+                api.put_json(folder_id, "job.json", manifest)
+
+                def _cb(status, message, progress, done, total, result_link=None):
+                    runner_state.update(status=status, message=message, progress=progress, done=done, total=total)
+                    if result_link:
+                        runner_state["result_link"] = result_link
+
+                res_link, fin_manifest = process_job_pipeline(api, folder_id, manifest, progress_callback=_cb)
+                runner_state.update(status=fin_manifest["status"], result_link=res_link or "", progress=100)
+        except Exception as exc:
+            worker_log.exception("Interactive job execution failed")
+            runner_state.update(status="FAILED", error=str(exc))
+
     else:
-        configured = all(os.environ.get(name) for name in
-            ("R2_ACCOUNT_ID", "R2_BUCKET", "R2_ACCESS_KEY_ID", "R2_SECRET_ACCESS_KEY"))
-    if configured and not getattr(threading, "_novelreader_worker_started", False):
-        thread = threading.Thread(target=worker_loop, name="novelreader-storage-worker", daemon=True)
-        thread.start()
-        threading._novelreader_worker_started = True
-        worker_state.update(status="waiting", message="Worker nền đã khởi động; đang chờ job")
-    elif not configured:
-        worker_state.update(status="needs_setup", message="Configure storage credentials in the MoLab runtime")
+        # Background worker polling loop if credentials are configured
+        storage_backend = os.environ.get("STORAGE_BACKEND", "huggingface").strip().lower()
+        has_token = bool(os.environ.get("HF_TOKEN") or os.environ.get("GDRIVE_OAUTH_TOKEN_JSON") or os.environ.get("R2_ACCESS_KEY_ID") or os.environ.get("PIXELDRAIN_API_KEY"))
+        if has_token and not getattr(threading, "_novelreader_auto_worker_started", False):
+            def _bg_loop():
+                worker_log.info("Background storage poller started.")
+                while True:
+                    try:
+                        api = create_store(storage_backend)
+                        app_id = api.child(api.root_id, BOT_APP_FOLDER)
+                        jobs_id = api.child(app_id, "jobs")
+                        rows = api.list_children(jobs_id)
+                        pending = None
+                        for row in rows:
+                            if row.get("type") != "dir":
+                                continue
+                            m = api.get_json(row["path"], "job.json")
+                            if m and m.get("status") in ("QUEUED", "RUNNING"):
+                                pending = (row["path"], m)
+                                break
+                        if pending:
+                            worker_log.info(f"Processing job {pending[1]['job_id']}")
+                            process_job_pipeline(api, pending[0], pending[1])
+                    except Exception as err:
+                        worker_log.error(f"Worker cycle error: {err}")
+                    time.sleep(30)
 
-    mo.md(f"**Trạng thái worker:** `{worker_state['status']}`  \n{worker_state['message']}  \n**Job:** `{worker_state['job_id'] or '—'}`")
-    return
+            t = threading.Thread(target=_bg_loop, name="novelreader-bg-poller", daemon=True)
+            t.start()
+            threading._novelreader_auto_worker_started = True
+            runner_state.update(status="LISTENING", message="Công nhân nền đang lắng nghe job từ Telegram...")
+
+    cur_status = runner_state["status"]
+    cur_prog = runner_state["progress"]
+    cur_done = runner_state["done"]
+    cur_tot = runner_state["total"]
+    cur_msg = runner_state["message"]
+    cur_link = runner_state["result_link"]
+    cur_err = runner_state["error"]
+
+    status_color = "#4caf50" if "COMPLETED" in cur_status else ("#f44336" if "FAIL" in cur_status else "#2196f3")
+
+    dashboard_html = mo.Html(f"""
+    <div id="novelreader-status" 
+         data-status="{cur_status}" 
+         data-progress="{cur_prog}" 
+         data-done="{cur_done}" 
+         data-total="{cur_tot}" 
+         data-result-link="{cur_link}"
+         style="margin-top: 16px; padding: 16px; border: 1px solid #ccc; border-radius: 8px; background: #fff;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+            <span style="font-weight: bold; font-size: 16px;">Trạng thái tiến trình:</span>
+            <span style="background: {status_color}; color: white; padding: 4px 12px; border-radius: 12px; font-weight: bold; font-size: 14px;">
+                {cur_status}
+            </span>
+        </div>
+        <p style="margin: 6px 0; color: #444;">{cur_msg}</p>
+        <div style="background: #e0e0e0; border-radius: 6px; height: 16px; overflow: hidden; margin-top: 8px;">
+            <div style="background: {status_color}; height: 100%; width: {cur_prog}%; transition: width 0.4s ease;"></div>
+        </div>
+        <div style="margin-top: 6px; font-size: 13px; color: #666; display: flex; justify-content: space-between;">
+            <span>Tiến độ: {cur_done}/{cur_tot} chương ({cur_prog}%)</span>
+        </div>
+        {f'<div id="novelreader-result" style="margin-top: 14px; padding: 12px; background: #e8f5e9; border: 1px solid #a5d6a7; border-radius: 6px;"><strong style="color: #2e7d32;">🎉 Kết quả đã sẵn sàng:</strong> <a id="novelreader-download-link" href="{cur_link}" target="_blank" style="font-weight: bold; color: #1565c0; word-break: break-all;">{cur_link}</a></div>' if cur_link else ''}
+        {f'<div style="margin-top: 12px; padding: 10px; background: #ffebee; color: #c62828; border-radius: 4px;"><strong>Lỗi:</strong> {cur_err}</div>' if cur_err else ''}
+    </div>
+    """)
+    mo.output.append(dashboard_html)
+    return (runner_state,)
 
 
 if __name__ == "__main__":
