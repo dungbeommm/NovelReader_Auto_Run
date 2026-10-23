@@ -168,29 +168,6 @@ class TelegramBot:
     def save_state(self) -> None:
         self.storage.put_json(self.app_folder, "bot_state.json", self.shared_state)
 
-    def dispatch_molab_job(self, job_id: str, chat_id: int) -> bool:
-        token = os.environ.get("GITHUB_ACTIONS_TOKEN", "").strip()
-        repository = os.environ.get("GITHUB_REPOSITORY", "").strip()
-        if not token or not repository:
-            log.warning("GitHub Actions dispatch is unavailable; job_id=%s", job_id)
-            return False
-        response = self.http.post(
-            f"https://api.github.com/repos/{repository}/dispatches",
-            headers={
-                "Accept": "application/vnd.github+json",
-                "Authorization": f"Bearer {token}",
-                "X-GitHub-Api-Version": "2022-11-28",
-            },
-            json={
-                "event_type": "novelreader_job",
-                "client_payload": {"job_id": job_id, "chat_id": chat_id},
-            },
-            timeout=20,
-        )
-        if response.status_code != 204:
-            raise RuntimeError(f"GitHub repository_dispatch failed: HTTP {response.status_code}")
-        return True
-
     def _job(self, job_id: str) -> tuple[str, dict[str, Any] | None]:
         folder = self.storage.ensure_folder(job_id, self.jobs_folder)
         return folder, self.storage.get_json(folder, "job.json")
@@ -277,18 +254,8 @@ class TelegramBot:
             user["config"] = draft["config"]
             user["last_job"] = draft["job_id"]
             self.save_state()
-            try:
-                dispatched = self.dispatch_molab_job(draft["job_id"], chat_id)
-            except Exception:
-                log.exception("Could not dispatch MoLab job %s to GitHub Actions", draft["job_id"])
-                dispatched = False
-            notice = (
-                "GitHub Actions đã nhận lệnh mở worker MoLab."
-                if dispatched else
-                "Chưa cấu hình GitHub Actions dispatch; cần mở worker MoLab thủ công."
-            )
             story_name = draft.get("input", {}).get("name") or "truyện đã gửi"
-            self.send(chat_id, f"Đã xếp truyện '{story_name}' vào hàng đợi. {notice} Bot sẽ gửi lỗi và link kết quả khi hoàn tất.")
+            self.send(chat_id, f"Đã xếp truyện '{story_name}' vào hàng đợi chung. Worker MoLab sẽ tự nhận job; bot gửi lỗi và link kết quả khi hoàn tất.")
             user["draft"] = None
             self.save_state()
 

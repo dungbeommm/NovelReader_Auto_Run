@@ -92,10 +92,12 @@ class BotStorageTests(unittest.TestCase):
         bot = TelegramBot("token", {"123"}, storage)
         bot.call = Mock()
         bot.send = Mock()
+        bot.http.post = Mock()
         user = bot._user("123")
         user["draft"] = {"job_id": "job-123", "config": deepcopy(DEFAULT_CONFIG)}
         bot.handle({"callback_query": {"id": "callback", "from": {"id": 123},
                                        "message": {"chat": {"id": 456}}, "data": "start:job-123"}})
+        bot.http.post.assert_not_called()
         manifest_writes = [call.args[2] for call in storage.put_json.call_args_list if call.args[1] == "job.json"]
         self.assertEqual(manifest_writes[-1]["status"], "QUEUED")
         self.assertIsNone(user["draft"])

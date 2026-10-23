@@ -11,8 +11,6 @@ on:
   pull_request:
   schedule:
     - cron: "0 */5 * * *"
-  repository_dispatch:
-    types: [novelreader_job]
   workflow_dispatch:
 
 permissions:
@@ -81,9 +79,12 @@ jobs:
         run: python -m app.github_runner
 
   run-molab-browser:
-    if: github.event_name == 'repository_dispatch'
+    if: github.event_name == 'schedule' || (github.event_name == 'push' && github.ref == 'refs/heads/main') || github.event_name == 'workflow_dispatch'
     runs-on: [self-hosted, Windows, molab-vm]
     timeout-minutes: 330
+    concurrency:
+      group: continuous-molab-worker
+      cancel-in-progress: false
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -94,12 +95,11 @@ jobs:
         run: |
           python -m pip install -r requirements.txt playwright
           python -m playwright install chromium
-      - name: Open public MoLab app and run job
+      - name: Poll shared Hugging Face queue and run MoLab jobs
         env:
           MOLAB_NOTEBOOK_URL: ${{ vars.MOLAB_NOTEBOOK_URL || 'https://molab.marimo.io/notebooks/nb_Xbo9yBAiW4wEx3M96hNnz4/app' }}
           STORAGE_BACKEND: huggingface
           HF_BUCKET_ID: ${{ vars.HF_BUCKET_ID || 'uri410/audio' }}
           HF_ROOT_PREFIX: ${{ vars.HF_ROOT_PREFIX || 'novelreader' }}
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
-          NOVELREADER_JOB_ID: ${{ github.event.client_payload.job_id || '' }}
-        run: python -m browser.molab_controller --notebook-url "$env:MOLAB_NOTEBOOK_URL" --storage huggingface
+        run: python -m app.molab_worker --notebook-url "$env:MOLAB_NOTEBOOK_URL" --max-seconds 19000
