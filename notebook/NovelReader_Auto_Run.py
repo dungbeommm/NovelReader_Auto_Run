@@ -1053,7 +1053,18 @@ def execution_and_background_worker(
     else:
         # Background worker polling loop if credentials are configured
         storage_backend = os.environ.get("STORAGE_BACKEND", "huggingface").strip().lower()
-        has_token = bool(os.environ.get("HF_TOKEN") or os.environ.get("GDRIVE_OAUTH_TOKEN_JSON") or os.environ.get("R2_ACCESS_KEY_ID") or os.environ.get("PIXELDRAIN_API_KEY"))
+        if storage_backend in ("huggingface", "hf"):
+            has_token = bool(os.environ.get("HF_TOKEN"))
+        elif storage_backend in ("gdrive", "drive", "google_drive"):
+            has_token = bool(os.environ.get("GDRIVE_OAUTH_TOKEN_JSON"))
+        elif storage_backend == "r2":
+            has_token = all(os.environ.get(name) for name in (
+                "R2_ACCOUNT_ID", "R2_BUCKET", "R2_ACCESS_KEY_ID", "R2_SECRET_ACCESS_KEY"
+            ))
+        elif storage_backend == "pixeldrain":
+            has_token = bool(os.environ.get("PIXELDRAIN_API_KEY"))
+        else:
+            has_token = False
         if has_token and not getattr(threading, "_novelreader_auto_worker_started", False):
             def _bg_loop():
                 worker_log.info("Background storage poller started.")
