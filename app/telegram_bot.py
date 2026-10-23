@@ -34,6 +34,22 @@ DEFAULT_CONFIG: dict[str, Any] = {
     "storage": {"sharing": "link_reader"},
 }
 MAX_TELEGRAM_DOWNLOAD = 20 * 1024 * 1024
+MENU_BUTTONS = {
+    "📤 Gửi EPUB": "/upload",
+    "⚙️ Cấu hình": "/config",
+    "📊 Trạng thái": "/status",
+    "🔗 Kết quả": "/result",
+    "❌ Hủy": "/cancel",
+    "❓ Trợ giúp": "/help",
+}
+MENU_KEYBOARD: dict[str, Any] = {
+    "keyboard": [
+        [{"text": "📤 Gửi EPUB"}, {"text": "⚙️ Cấu hình"}],
+        [{"text": "📊 Trạng thái"}, {"text": "🔗 Kết quả"}],
+        [{"text": "❌ Hủy"}, {"text": "❓ Trợ giúp"}],
+    ],
+    "resize_keyboard": True,
+}
 
 
 def utcnow() -> str:
@@ -131,8 +147,7 @@ class TelegramBot:
 
     def send(self, chat_id: int, text: str, keyboard: dict[str, Any] | None = None) -> None:
         payload: dict[str, Any] = {"chat_id": chat_id, "text": text, "disable_web_page_preview": True}
-        if keyboard:
-            payload["reply_markup"] = keyboard
+        payload["reply_markup"] = keyboard if keyboard is not None else MENU_KEYBOARD
         self.call("sendMessage", **payload)
 
     def _user_folder(self, user_id: str) -> str:
@@ -256,16 +271,18 @@ class TelegramBot:
             return
         chat_id = message["chat"]["id"]
         text = (message.get("text") or "").strip()
+        text = MENU_BUTTONS.get(text, text)
+        command = text.split(maxsplit=1)[0].split("@", 1)[0] if text else ""
         if message.get("document"):
             self._handle_document(message, user_id)
             return
-        if text.startswith("/start") or text.startswith("/help"):
-            self.send(chat_id, "Gửi EPUB tiếng Trung để tạo job. Lệnh: /config, /set nhóm.trường giá_trị, /status, /result, /cancel.")
-        elif text.startswith("/config"):
+        if command in ("/start", "/help", "/upload"):
+            self.send(chat_id, "Gửi file EPUB tiếng Trung vào chat này để tạo job. Chọn nút bên dưới để xem cấu hình, trạng thái, kết quả hoặc hủy bản nháp. Muốn sửa cấu hình, gửi /set nhóm.trường giá_trị (ví dụ: /set audio.speed 1.1).")
+        elif command == "/config":
             user = self._user(user_id)
             user["config"] = normalize_config(user.get("config") or self.storage.get_json(user["folder_id"], "config.json") or DEFAULT_CONFIG)
             self.send(chat_id, pretty_config(user["config"]))
-        elif text.startswith("/set "):
+        elif command == "/set":
             parts = text.split(maxsplit=2)
             if len(parts) != 3:
                 self.send(chat_id, "Cú pháp: /set nhóm.trường giá_trị (vd: /set audio.speed 1.1)")
@@ -287,7 +304,7 @@ class TelegramBot:
                 self.send(chat_id, "Đã cập nhật preset.\n\n" + pretty_config(config))
             except (ValueError, jsonschema.ValidationError) as exc:
                 self.send(chat_id, str(exc))
-        elif text.startswith("/status"):
+        elif command == "/status":
             user = self._user(user_id)
             job_id = user.get("last_job") or (user.get("draft") or {}).get("job_id")
             if not job_id:
@@ -299,7 +316,7 @@ class TelegramBot:
                 self.send(chat_id, f"Job {job_id}\nTrạng thái: {manifest['status']}\nChương: {p.get('done_chapters', 0)}/{p.get('total_chapters', 0)}; lỗi: {p.get('failed_chapters', 0)}")
             else:
                 self.send(chat_id, f"Không tìm thấy dữ liệu job {job_id}.")
-        elif text.startswith("/result"):
+        elif command == "/result":
             user = self._user(user_id)
             job_id = user.get("last_job")
             folder, manifest = self._job(job_id) if job_id else ("", None)
@@ -309,7 +326,7 @@ class TelegramBot:
                 if manifest["config"].get("storage", manifest["config"].get("pixeldrain", {})).get("sharing") == "link_reader":
                     link = self.storage.share_link_reader(result["result_path"])
             self.send(chat_id, link or "Chưa có link kết quả cho job gần nhất hoặc kết quả đang ở chế độ riêng tư.")
-        elif text.startswith("/cancel"):
+        elif command == "/cancel":
             user = self._user(user_id)
             user["draft"] = None
             self.save_state()
