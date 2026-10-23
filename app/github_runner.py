@@ -35,7 +35,7 @@ def dispatch_successor() -> bool:
             "Authorization": f"Bearer {token}",
             "X-GitHub-Api-Version": "2022-11-28",
         },
-        json={"ref": ref, "inputs": {"mode": "poll-telegram"}},
+        json={"ref": ref},
         timeout=30,
     )
     if response.status_code not in (200, 201, 204):

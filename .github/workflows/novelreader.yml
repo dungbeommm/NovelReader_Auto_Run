@@ -14,16 +14,6 @@ on:
   repository_dispatch:
     types: [novelreader_job]
   workflow_dispatch:
-    inputs:
-      mode:
-        description: Workflow execution mode
-        required: true
-        default: poll-telegram
-        type: choice
-        options:
-          - health-check
-          - poll-telegram
-          - run-molab-browser
 
 permissions:
   contents: read
@@ -44,7 +34,7 @@ jobs:
       - run: marimo check notebook/NovelReader_Auto_Run.py
 
   poll-telegram:
-    if: github.event_name == 'schedule' || (github.event_name == 'push' && github.ref == 'refs/heads/main') || (github.event_name == 'workflow_dispatch' && inputs.mode == 'poll-telegram')
+    if: github.event_name == 'schedule' || (github.event_name == 'push' && github.ref == 'refs/heads/main') || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     timeout-minutes: 360
     concurrency:
@@ -60,6 +50,21 @@ jobs:
           python-version: "3.12"
           cache: pip
       - run: python -m pip install -r requirements.txt
+      - name: Verify Hugging Face storage before starting the bot
+        env:
+          STORAGE_BACKEND: huggingface
+          HF_BUCKET_ID: ${{ vars.HF_BUCKET_ID || 'uri410/audio' }}
+          HF_ROOT_PREFIX: ${{ vars.HF_ROOT_PREFIX || 'novelreader' }}
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+        run: |
+          python - <<'PY'
+          from app.storage import create_store
+          store = create_store()
+          folder = store.ensure_folder("healthcheck")
+          store.put_json(folder, "check.json", {"ok": True})
+          assert store.get_json(folder, "check.json") == {"ok": True}
+          print("HF storage ready")
+          PY
       - name: Run Telegram bot with continuous watchdog and handover
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
@@ -76,7 +81,7 @@ jobs:
         run: python -m app.github_runner
 
   run-molab-browser:
-    if: github.event_name == 'repository_dispatch' || (github.event_name == 'workflow_dispatch' && inputs.mode == 'run-molab-browser')
+    if: github.event_name == 'repository_dispatch'
     runs-on: [self-hosted, Windows, molab-vm]
     timeout-minutes: 330
     steps:
@@ -100,22 +105,3 @@ jobs:
           MOLAB_PROFILE_ENCRYPTION_KEY: ${{ secrets.MOLAB_PROFILE_ENCRYPTION_KEY }}
           NOVELREADER_JOB_ID: ${{ github.event.client_payload.job_id || '' }}
         run: python -m browser.molab_controller --notebook-url "$env:MOLAB_NOTEBOOK_URL" --storage huggingface --profile-dir "$env:MOLAB_BROWSER_PROFILE" --sync-profile
-
-  health-check:
-    if: github.event_name == 'workflow_dispatch' && inputs.mode == 'health-check'
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
-          cache: pip
-      - run: python -m pip install -r requirements.txt
-      - name: Check Hugging Face bucket access
-        env:
-          STORAGE_BACKEND: huggingface
-          HF_BUCKET_ID: ${{ vars.HF_BUCKET_ID || 'uri410/audio' }}
-          HF_ROOT_PREFIX: ${{ vars.HF_ROOT_PREFIX || 'novelreader' }}
-          HF_TOKEN: ${{ secrets.HF_TOKEN }}
-        run: |
-          python -c 'from app.storage import create_store; s=create_store(); p=s.ensure_folder("healthcheck"); s.put_json(p,"check.json",{"ok": True}); assert s.get_json(p,"check.json")=={"ok": True}; print("Hugging Face bucket connection OK")'
