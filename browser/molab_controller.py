@@ -41,7 +41,7 @@ def _profile_store():
     return store, auth
 
 
-def _sync_profile(profile_dir: Path, *, download: bool = False) -> None:
+def _sync_profile(profile_dir: Path, *, download: bool = False) -> bool:
     """Store only an authenticated encrypted Chromium profile in the HF bucket."""
     from cryptography.fernet import Fernet
 
@@ -61,7 +61,7 @@ def _sync_profile(profile_dir: Path, *, download: bool = False) -> None:
                 from huggingface_hub.errors import EntryNotFoundError
                 if isinstance(exc, EntryNotFoundError):
                     logger.info("No saved HF browser profile yet; using local profile directory.")
-                    return
+                    return False
                 raise
             archive = Path(tmp) / "profile.zip"
             try:
@@ -76,7 +76,7 @@ def _sync_profile(profile_dir: Path, *, download: bool = False) -> None:
                         raise RuntimeError("Unsafe path in encrypted browser profile archive")
                 bundle.extractall(resolved)
         logger.info("Restored encrypted MoLab profile from Hugging Face.")
-        return
+        return True
 
     excluded_dirs = {"Cache", "Code Cache", "GPUCache", "GrShaderCache", "ShaderCache", "Service Worker"}
     with tempfile.TemporaryDirectory(prefix="novelreader-profile-") as tmp:
@@ -92,6 +92,7 @@ def _sync_profile(profile_dir: Path, *, download: bool = False) -> None:
         encrypted.write_bytes(cipher.encrypt(archive.read_bytes()))
         store.upload(encrypted, auth_folder, PROFILE_OBJECT_NAME)
     logger.info("Saved encrypted MoLab browser profile to Hugging Face.")
+    return True
 
 
 async def _notebook_surface(page, timeout_ms: int = 90000):
@@ -103,6 +104,27 @@ async def _notebook_surface(page, timeout_ms: int = 90000):
                 return frame
         await asyncio.sleep(1)
     return page
+
+
+async def _interactive_login(p, notebook_url: str, profile_dir: Path) -> None:
+    """Show the first-login/re-authentication window on the interactive Windows runner."""
+    context = await p.chromium.launch_persistent_context(
+        user_data_dir=str(profile_dir.resolve()),
+        headless=False,
+        viewport={"width": 1440, "height": 900},
+    )
+    page = context.pages[0] if context.pages else await context.new_page()
+    try:
+        await page.goto(notebook_url, wait_until="domcontentloaded", timeout=90000)
+        print("Sign in to MoLab in the visible Chromium window. The job will continue automatically.", flush=True)
+        await _notebook_surface(page, timeout_ms=15 * 60 * 1000)
+        if not any("preview.sb.molab.run" in frame.url for frame in page.frames):
+            raise RuntimeError("MoLab sign-in was not completed before timeout; rerun the Telegram job.")
+        surface = await _notebook_surface(page)
+        await surface.wait_for_selector("#novelreader-container, .marimo-app, [data-marimo-app]", timeout=180000)
+    finally:
+        await context.close()
+    _sync_profile(profile_dir, download=False)
 
 
 async def run_molab_automation(
@@ -126,9 +148,11 @@ async def run_molab_automation(
         raise RuntimeError("Playwright is required for browser automation")
 
     logger.info(f"Khởi động trình duyệt Chromium tự động (headless={headless})...")
-    if sync_profile and profile_dir:
-        _sync_profile(profile_dir, download=True)
+    profile_available = bool(sync_profile and profile_dir and _sync_profile(profile_dir, download=True))
     async with async_playwright() as p:
+        if sync_profile and profile_dir and not profile_available:
+            await _interactive_login(p, notebook_url, profile_dir)
+            profile_available = True
         launch_options = {
             "headless": headless,
             "args": [
@@ -158,7 +182,20 @@ async def run_molab_automation(
         except Exception as exc:
             logger.warning(f"Điều hướng ban đầu: {exc}. Đang thử đợi nội dung render...")
 
-        surface = await _notebook_surface(page)
+        surface = await _notebook_surface(page, timeout_ms=90000 if profile_available else 15 * 60 * 1000)
+        preview_loaded = any("preview.sb.molab.run" in frame.url for frame in page.frames)
+        if sync_profile and profile_dir and not preview_loaded:
+            await context.close()
+            await _interactive_login(p, notebook_url, profile_dir)
+            context = await p.chromium.launch_persistent_context(
+                user_data_dir=str(profile_dir.resolve()),
+                viewport={"width": 1920, "height": 1080},
+                **launch_options,
+            )
+            page = context.pages[0] if context.pages else await context.new_page()
+            await page.goto(notebook_url, wait_until="domcontentloaded", timeout=90000)
+            surface = await _notebook_surface(page, timeout_ms=90000)
+            preview_loaded = any("preview.sb.molab.run" in frame.url for frame in page.frames)
         logger.info("Chờ giao diện NovelReader hoặc Marimo app tải...")
         try:
             await surface.wait_for_selector("#novelreader-container, .marimo-app, [data-marimo-app]", timeout=90000)
@@ -167,12 +204,12 @@ async def run_molab_automation(
             logger.warning("Không tìm thấy #novelreader-container ngay, đợi thêm 10s...")
             await asyncio.sleep(10)
 
-        if any(part in page.url.lower() for part in ("/login", "/signin", "accounts.google.com")) or not any("preview.sb.molab.run" in f.url for f in page.frames):
+        if any(part in page.url.lower() for part in ("/login", "/signin", "accounts.google.com")) or not preview_loaded:
             await context.close()
             if browser:
                 await browser.close()
             raise RuntimeError(
-                "MoLab needs a manual sign-in. Run this controller with --login on the Windows VM."
+                "MoLab sign-in is required. Run this job on the interactive Windows runner with --sync-profile enabled."
             )
 
         # 1. Upload story file if provided
@@ -324,39 +361,6 @@ async def run_molab_automation(
         return final_result
 
 
-async def setup_molab_login(notebook_url: str, profile_dir: Path, sync_profile: bool = False) -> None:
-    """Open headed Chromium on the interactive Windows runner for first-time login."""
-    try:
-        from playwright.async_api import async_playwright
-    except ImportError:
-        raise RuntimeError("Playwright is required: pip install playwright && playwright install chromium")
-
-    profile_dir.mkdir(parents=True, exist_ok=True)
-    async with async_playwright() as p:
-        context = await p.chromium.launch_persistent_context(
-            user_data_dir=str(profile_dir.resolve()),
-            headless=False,
-            viewport={"width": 1440, "height": 900},
-        )
-        page = context.pages[0] if context.pages else await context.new_page()
-        await page.goto(notebook_url, wait_until="domcontentloaded", timeout=90000)
-        print("Sign in in the visible Chromium window. Keep the window open until the notebook loads.", flush=True)
-        try:
-            await _notebook_surface(page, timeout_ms=15 * 60 * 1000)
-            if not any("preview.sb.molab.run" in frame.url for frame in page.frames):
-                raise RuntimeError("MoLab notebook preview did not load; finish sign-in and retry setup-molab-login.")
-            print("MoLab notebook frame detected; waiting until the NovelReader app is ready.", flush=True)
-            surface = await _notebook_surface(page)
-            await surface.wait_for_selector("#novelreader-container, .marimo-app, [data-marimo-app]", timeout=180000)
-            print("MoLab sign-in is ready; saving profile.", flush=True)
-            await context.close()
-            if sync_profile:
-                _sync_profile(profile_dir, download=False)
-        except Exception:
-            await context.close()
-            raise
-
-
 def main():
     parser = argparse.ArgumentParser(description="NovelReader MoLab Browser Automation Controller")
     parser.add_argument("--notebook-url", default=os.getenv("MOLAB_NOTEBOOK_URL", "https://molab.marimo.io/notebooks"))
@@ -365,7 +369,6 @@ def main():
     parser.add_argument("--storage", default=os.getenv("STORAGE_BACKEND", "huggingface"))
     parser.add_argument("--profile-dir", type=Path, default=None)
     parser.add_argument("--job-id", default=os.getenv("NOVELREADER_JOB_ID") or None)
-    parser.add_argument("--login", action="store_true", help="Open a visible browser for first-time manual MoLab sign-in")
     parser.add_argument("--sync-profile", action="store_true", help="Restore and save an encrypted profile in HF storage")
     parser.add_argument("--headless", action="store_true", default=True)
     parser.add_argument("--no-headless", action="store_false", dest="headless")
@@ -379,10 +382,6 @@ def main():
         if os.getenv("MOLAB_BROWSER_PROFILE")
         else Path.home() / ".novelreader" / "molab-chromium-profile"
     )
-    if args.login:
-        asyncio.run(setup_molab_login(args.notebook_url, profile_dir, sync_profile=args.sync_profile))
-        return
-
     config_data = None
     if args.config:
         config_path = Path(args.config)

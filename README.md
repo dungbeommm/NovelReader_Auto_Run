@@ -89,7 +89,7 @@ python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().d
 
 1. Dùng Windows VM có Remote Desktop. Cài Python 3.12 và đăng ký VM làm GitHub self-hosted Actions runner với labels `self-hosted`, `Windows`, `molab-vm`.
 2. Đăng nhập Windows bằng Remote Desktop và chạy agent runner trong desktop người dùng hiện tại, ví dụ `run.cmd`. Không chạy runner dưới dạng Windows Service cho bước đăng nhập đầu tiên; service chạy trong session nền nên cửa sổ Chromium không hiện trên desktop.
-3. Trong GitHub → **Actions → NovelReader automation → Run workflow**, chọn `setup-molab-login`. Job mở Chromium trên màn hình VM. Đăng nhập MoLab và chờ notebook hiện ra; job sẽ tự mã hóa rồi tải profile lên HF.
-4. Giữ runner online. Khi gửi truyện cho Telegram bot, GitHub-hosted poller tạo job trên HF và phát `repository_dispatch`; Windows runner khôi phục profile từ HF, mở notebook và chờ job hoàn tất.
+3. Giữ runner online và đăng nhập VM bằng Remote Desktop. Gửi truyện cho Telegram bot rồi bấm **Bắt đầu**. GitHub-hosted poller nhận nút bấm, lưu job lên HF rồi phát `repository_dispatch`.
+4. Lần chạy đầu, Windows runner tự mở cửa sổ Chromium trên desktop VM. Đăng nhập MoLab; job sẽ tự mã hóa profile lên HF rồi tiếp tục chạy. Những lần sau runner tự khôi phục profile, mở notebook và chờ job hoàn tất.
 
-Nếu cần đăng nhập lại, chạy lại `setup-molab-login`. Phải giữ nguyên `MOLAB_PROFILE_ENCRYPTION_KEY` để khôi phục profile. Nếu mất khóa, xóa `novelreader/auth/molab-profile.enc` khỏi bucket rồi đăng nhập lại để tạo profile mới. Do bucket công khai, người khác có thể tải ciphertext; họ vẫn cần khóa bí mật để giải mã.
+Nếu MoLab hết phiên đăng nhập, lần bấm **Bắt đầu** tiếp theo sẽ mở lại Chromium để bạn đăng nhập. Phải giữ nguyên `MOLAB_PROFILE_ENCRYPTION_KEY` để khôi phục profile. Nếu mất khóa, xóa `novelreader/auth/molab-profile.enc` khỏi bucket rồi gửi job mới và đăng nhập lại. Do bucket công khai, người khác có thể tải ciphertext; họ vẫn cần khóa bí mật để giải mã.
