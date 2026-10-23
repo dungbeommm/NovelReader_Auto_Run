@@ -7,7 +7,7 @@ import os
 import subprocess
 import sys
 import time
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 from app.storage import create_store
 
@@ -26,7 +26,20 @@ def next_job(store, job_id: str | None = None):
         if row.get("type") != "dir":
             continue
         manifest = store.get_json(row["path"], "job.json")
-        if manifest and manifest.get("status") in ("QUEUED", "RUNNING") and (not job_id or manifest.get("job_id") == job_id):
+        if not manifest or (job_id and manifest.get("job_id") != job_id):
+            continue
+        status = manifest.get("status")
+        stale_running = False
+        if status == "RUNNING":
+            heartbeat = manifest.get("runtime", {}).get("last_heartbeat_at") or manifest.get("updated_at")
+            try:
+                heartbeat_at = datetime.fromisoformat(str(heartbeat).replace("Z", "+00:00"))
+                if heartbeat_at.tzinfo is None:
+                    heartbeat_at = heartbeat_at.replace(tzinfo=timezone.utc)
+                stale_running = (datetime.now(timezone.utc) - heartbeat_at).total_seconds() > 480
+            except (TypeError, ValueError):
+                stale_running = True
+        if status in ("QUEUED", "PAUSED") or stale_running:
             candidates.append((manifest.get("created_at", ""), row["path"], manifest))
     if not candidates:
         return None
@@ -38,6 +51,29 @@ def record_failure(store, folder: str, manifest: dict, detail: str) -> None:
     manifest["status"] = "FAILED"
     manifest["updated_at"] = utcnow()
     manifest.setdefault("errors", []).append({"stage": "browser_worker", "detail": detail[-3000:]})
+    store.put_json(folder, "job.json", manifest)
+
+
+def record_paused(store, folder: str, manifest: dict, detail: str) -> None:
+    """Persist a resumable state after a MoLab/browser execution window ends."""
+    manifest["status"] = "PAUSED"
+    manifest["updated_at"] = utcnow()
+    manifest.setdefault("runtime", {}).update(
+        paused_at=manifest["updated_at"],
+        pause_reason=detail[-1000:],
+        pause_requested=False,
+        retry_after=(datetime.now(timezone.utc) + timedelta(seconds=30)).isoformat(timespec="seconds"),
+    )
+    store.put_json(folder, "job.json", manifest)
+
+
+def request_pause(store, folder: str, manifest: dict, detail: str) -> None:
+    manifest["updated_at"] = utcnow()
+    manifest.setdefault("runtime", {}).update(
+        pause_requested=True,
+        pause_requested_at=manifest["updated_at"],
+        pause_reason=detail[-1000:],
+    )
     store.put_json(folder, "job.json", manifest)
 
 
@@ -70,6 +106,8 @@ def run(notebook_url: str, idle_seconds: int, max_seconds: int, job_id: str | No
             "huggingface",
             "--job-id",
             job_id,
+            "--max-seconds",
+            str(min(18_000, max(60, int(deadline - time.monotonic()) - 60))),
         ]
         try:
             result = subprocess.run(
@@ -85,28 +123,41 @@ def run(notebook_url: str, idle_seconds: int, max_seconds: int, job_id: str | No
             if result.stderr:
                 log.warning("MoLab controller errors:\n%s", result.stderr[-6000:])
             refreshed = store.get_json(folder, "job.json") or manifest
-            if refreshed.get("status") not in ("COMPLETED", "COMPLETED_WITH_ERRORS", "FAILED"):
+            if refreshed.get("status") in ("COMPLETED", "COMPLETED_WITH_ERRORS", "FAILED"):
+                if job_id:
+                    return 0 if refreshed["status"].startswith("COMPLETED") else 1
+                continue
+            if refreshed.get("status") == "PAUSED":
+                log.info("Job %s paused with a saved checkpoint; Telegram bot will queue the next session", job_id)
+                return 0
+            if refreshed.get("status") == "RUNNING":
                 detail = (result.stderr or result.stdout).strip()[-2500:]
-                reason = (
-                    f"MoLab controller exited with code {result.returncode} before reaching a terminal job status. "
-                    f"{detail}"
-                ).strip()
-                record_failure(store, folder, refreshed, reason)
-            elif result.returncode and refreshed.get("status") != "FAILED":
+                reason = f"MoLab controller ended before the job finished. {detail}".strip()
+                request_pause(store, folder, refreshed, reason)
+                pause_deadline = min(deadline, time.monotonic() + 150)
+                while time.monotonic() < pause_deadline:
+                    time.sleep(10)
+                    refreshed = store.get_json(folder, "job.json") or refreshed
+                    if refreshed.get("status") == "PAUSED":
+                        log.info("Job %s saved its checkpoint and paused", job_id)
+                        return 0
+                    if refreshed.get("status") in ("COMPLETED", "COMPLETED_WITH_ERRORS", "FAILED"):
+                        return 0 if refreshed["status"].startswith("COMPLETED") else 1
+                record_paused(store, folder, refreshed, reason)
+                return 0
+            if refreshed.get("status") == "QUEUED":
                 detail = (result.stderr or result.stdout).strip()[-2500:]
-                record_failure(
-                    store,
-                    folder,
-                    refreshed,
-                    f"MoLab controller exited with code {result.returncode}. {detail}".strip(),
-                )
-            if job_id:
-                return result.returncode
+                record_failure(store, folder, refreshed, f"MoLab worker could not claim the queued job. {detail}".strip())
+                return 1
         except Exception as exc:
             log.exception("Could not process story '%s'", story_name)
             refreshed = store.get_json(folder, "job.json") or manifest
-            if refreshed.get("status") not in ("COMPLETED", "COMPLETED_WITH_ERRORS", "FAILED"):
-                record_failure(store, folder, refreshed, f"{type(exc).__name__}: {exc}")
+            if refreshed.get("status") in ("COMPLETED", "COMPLETED_WITH_ERRORS", "FAILED"):
+                return 0 if refreshed["status"].startswith("COMPLETED") else 1
+            if refreshed.get("status") == "RUNNING":
+                request_pause(store, folder, refreshed, f"{type(exc).__name__}: {exc}")
+            record_paused(store, folder, refreshed, f"{type(exc).__name__}: {exc}")
+            return 0
 
     log.info("MoLab queue worker reached its handover window")
     return 0

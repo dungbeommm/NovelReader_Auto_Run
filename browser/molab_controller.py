@@ -302,7 +302,7 @@ async def run_molab_automation(
                     cur_done = progress.get("done_chapters", 0)
                     cur_total = progress.get("total_chapters", 0)
                     logger.info(f"[{int(elapsed)}s] Job {job_id}: {cur_status} | {cur_done}/{cur_total} chapters")
-                    if cur_status in ("COMPLETED", "COMPLETED_WITH_ERRORS", "FAILED"):
+                    if cur_status in ("COMPLETED", "COMPLETED_WITH_ERRORS", "FAILED", "PAUSED"):
                         result = manifest.get("result") or {}
                         link = result.get("download_link", "")
                         if not link and result.get("result_path"):
@@ -310,7 +310,7 @@ async def run_molab_automation(
                         final_result = {
                             "status": cur_status,
                             "result_link": link,
-                            "progress": 100 if cur_status.startswith("COMPLETED") else 0,
+                            "progress": 100 if cur_status.startswith("COMPLETED") else progress.get("completed_chapters", 0),
                             "done": cur_done,
                             "total": cur_total,
                         }

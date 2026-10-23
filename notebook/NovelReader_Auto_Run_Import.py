@@ -1,4 +1,4 @@
-﻿"""Public MoLab app worker and interactive runner for NovelReader.
+"""Public MoLab app worker and interactive runner for NovelReader.
 Designed for GitHub Actions browser control and direct execution without a MoLab sign-in.
 """
 import marimo
@@ -17,7 +17,9 @@ def title_cell(mo):
 
     Hệ thống dịch thuật & tạo audio tự động: **Telegram Bot ➔ GitHub Actions ➔ MoLab App công khai ➔ Hugging Face**.
     
-    *App có thể mở công khai không cần đăng nhập. Worker nền nhận job từ Telegram và lưu tiến trình/kết quả lên Hugging Face.*
+    API và Telegram Bot duy trì job, hàng đợi và trạng thái. MoLab chỉ đảm nhiệm dịch/TTS; checkpoint SQLite và file kết quả được lưu ra kho ngoài.
+
+    **Luồng trạng thái:** `QUEUED → RUNNING → PAUSED → RUNNING → COMPLETED` (hoặc `COMPLETED_WITH_ERRORS` / `FAILED`). Khi một phiên MoLab kết thúc, worker mở phiên mới, nạp checkpoint và tiếp tục các chương chưa xong.
     """)
     return
 
@@ -66,7 +68,7 @@ def shared_imports(deps_ready):
     import traceback
     import uuid
     import zipfile
-    from datetime import datetime, timezone
+    from datetime import datetime, timedelta, timezone
     from pathlib import Path
     from urllib.parse import quote
 
@@ -77,9 +79,6 @@ def shared_imports(deps_ready):
     from huggingface_hub import batch_bucket_files, bucket_info, download_bucket_files, list_bucket_tree
     from huggingface_hub.errors import EntryNotFoundError
 
-    # Personal notebook credential fallback. Keep this source file private.
-    if not os.environ.get("HF_TOKEN", "").strip():
-        os.environ["HF_TOKEN"] = "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"
 
     logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
     worker_log = logging.getLogger("novelreader.molab")
@@ -153,6 +152,7 @@ def shared_imports(deps_ready):
         sys,
         tempfile,
         threading,
+        timedelta,
         time,
         timezone,
         traceback,
@@ -663,6 +663,7 @@ def pipeline_helpers(
 def execution_core(
     WORK_ROOT,
     backup_database,
+    datetime,
     ensure_novelreader,
     hashlib,
     map_config,
@@ -670,6 +671,8 @@ def execution_core(
     os,
     restore_paths,
     time,
+    timedelta,
+    timezone,
     traceback,
     update_manifest,
     upload_paths,
@@ -704,10 +707,13 @@ def execution_core(
         data_root.mkdir(exist_ok=True)
         checkpoint = api.find(folder_id, "checkpoint.sqlite3")
         db_path = data_root / "novel.sqlite3"
+        resumed_from_checkpoint = bool(checkpoint)
         if checkpoint:
             api.download(checkpoint["path"], db_path)
             for output_name in ("output_text", "output_audio"):
-                restore_paths(api, api.child(folder_id, output_name), data_root / output_name)
+                remote_output = api.find(folder_id, output_name)
+                if remote_output and remote_output.get("type") == "dir":
+                    restore_paths(api, remote_output["path"], data_root / output_name)
 
         os.environ["NOVEL_OUTPUT_TEXT"] = str(data_root / "output_text")
         os.environ["NOVEL_OUTPUT_AUDIO"] = str(data_root / "output_audio")
@@ -726,18 +732,27 @@ def execution_core(
         config = map_config(manifest["config"])
         audio_enabled = bool(config.get("generate_audio", True))
         manifest["status"] = "RUNNING"
+        runtime = manifest.setdefault("runtime", {})
+        runtime["resumed_from_checkpoint"] = resumed_from_checkpoint
+        runtime["resume_count"] = int(runtime.get("resume_count", 0)) + (1 if resumed_from_checkpoint else 0)
+        runtime["started_at"] = now_iso()
+        runtime["last_heartbeat_at"] = runtime["started_at"]
+        runtime.pop("pause_requested", None)
+        runtime.pop("pause_requested_at", None)
+        runtime.pop("paused_at", None)
+        runtime.pop("pause_reason", None)
         manifest["progress"] = {
             "total_chapters": total_chapters,
             "done_chapters": sum(c["status"] == "done" for c in chapters),
             "completed_chapters": sum(
-                c["status"] == "done" and (not config["audio"]["enabled"] or c.get("audio_status") == "done")
+                c["status"] == "done" and (not audio_enabled or c.get("audio_status") == "done")
                 for c in chapters
             ),
             "completed_audio_chapters": sum(c.get("audio_status") == "done" for c in chapters),
             "failed_chapters": sum(c["status"] == "error" for c in chapters),
             "failed_audio_chapters": sum(
                 c.get("audio_status") == "error" for c in chapters
-            ) if config["audio"]["enabled"] else 0,
+            ) if audio_enabled else 0,
             "last_chapter": max((c["position"] for c in chapters if c["status"] == "done"), default=None),
         }
         update_manifest(api, folder_id, manifest)
@@ -746,11 +761,20 @@ def execution_core(
         job.start(config, reset=False)
 
         last_snapshot = 0.0
+        last_control_check = 0.0
         observed = None
         synced = {}
+        pause_requested = False
 
         while job.active:
             time.sleep(3)
+            if time.monotonic() - last_control_check >= 15:
+                control_manifest = api.get_json(folder_id, "job.json", {}) or {}
+                pause_requested = bool(control_manifest.get("runtime", {}).get("pause_requested"))
+                last_control_check = time.monotonic()
+                if pause_requested:
+                    worker_log.info("Pause requested for job %s; saving a final checkpoint", job_id)
+                    break
             current = store.list()
             done_count = sum(c["status"] == "done" for c in current)
             failed_count = sum(c["status"] == "error" for c in current)
@@ -783,11 +807,17 @@ def execution_core(
                         signature_file = (path.stat().st_size, path.stat().st_mtime_ns)
                         if synced.get(str(path)) == signature_file:
                             continue
-                        remote = api.child(folder_id, output_name)
+                        remote = api.ensure_folder(output_name, folder_id)
                         for segment in path.relative_to(root).parts[:-1]:
                             remote = api.ensure_folder(segment, remote)
                         api.upload(path, remote)
                         synced[str(path)] = signature_file
+
+                latest_control = api.get_json(folder_id, "job.json", {}) or {}
+                if latest_control.get("runtime", {}).get("pause_requested"):
+                    pause_requested = True
+                    worker_log.info("Pause requested during sync for job %s", job_id)
+                    break
 
                 manifest["progress"] = {
                     "total_chapters": total_chapters,
@@ -798,8 +828,53 @@ def execution_core(
                     "failed_audio_chapters": failed_audio_count,
                     "last_chapter": max((c["position"] for c in current if c["status"] == "done"), default=None),
                 }
+                runtime["last_checkpoint_at"] = now_iso()
+                runtime["last_heartbeat_at"] = runtime["last_checkpoint_at"]
+                runtime["checkpoint_chapters_done"] = done_count
+                runtime["checkpoint_chapters_total"] = total_chapters
                 update_manifest(api, folder_id, manifest)
                 last_snapshot = time.monotonic()
+
+        if pause_requested:
+            current = store.list()
+            backup_database(store, data_root / "checkpoint.sqlite3")
+            api.upload(data_root / "checkpoint.sqlite3", folder_id)
+            for output_name in ("output_text", "output_audio"):
+                root = data_root / output_name
+                if root.exists():
+                    upload_paths(api, root, api.ensure_folder(output_name, folder_id))
+            done_count = sum(c["status"] == "done" for c in current)
+            audio_done_count = sum(c.get("audio_status") == "done" for c in current) if audio_enabled else 0
+            failed_count = sum(c["status"] == "error" for c in current)
+            failed_audio_count = sum(c.get("audio_status") == "error" for c in current) if audio_enabled else 0
+            completed_count = sum(
+                c["status"] == "done" and (not audio_enabled or c.get("audio_status") == "done")
+                for c in current
+            )
+            latest = api.get_json(folder_id, "job.json", {}) or manifest
+            manifest.update(latest)
+            manifest["status"] = "PAUSED"
+            manifest["progress"] = {
+                "total_chapters": total_chapters,
+                "done_chapters": done_count,
+                "completed_chapters": completed_count,
+                "completed_audio_chapters": audio_done_count,
+                "failed_chapters": failed_count,
+                "failed_audio_chapters": failed_audio_count,
+                "last_chapter": max((c["position"] for c in current if c["status"] == "done"), default=None),
+            }
+            manifest.setdefault("runtime", {}).update(
+                pause_requested=False,
+                paused_at=now_iso(),
+                retry_after=(datetime.now(timezone.utc) + timedelta(seconds=30)).isoformat(timespec="seconds"),
+                last_checkpoint_at=now_iso(),
+                checkpoint_chapters_done=done_count,
+                checkpoint_chapters_total=total_chapters,
+            )
+            update_manifest(api, folder_id, manifest)
+            if progress_callback:
+                progress_callback(status="PAUSED", message="Đã lưu checkpoint; job sẽ tiếp tục ở phiên MoLab kế tiếp.", progress=int(completed_count / total_chapters * 100) if total_chapters else 0, done=completed_count, total=total_chapters)
+            return None, manifest
 
         final_chapters = store.list()
         done_final = sum(c["status"] == "done" for c in final_chapters)
@@ -813,6 +888,8 @@ def execution_core(
         job_failed = getattr(job, "status", "ready") == "error"
         backup_database(store, data_root / "checkpoint.sqlite3")
         api.upload(data_root / "checkpoint.sqlite3", folder_id)
+        runtime["last_checkpoint_at"] = now_iso()
+        runtime["last_heartbeat_at"] = runtime["last_checkpoint_at"]
 
         book = store.book()
         try:
@@ -998,6 +1075,7 @@ def execution_and_background_worker(
     backend_selector=None,
     config_input=None,
     create_store=None,
+    datetime=None,
     file_uploader=None,
     hashlib=None,
     json=None,
@@ -1009,10 +1087,37 @@ def execution_and_background_worker(
     stop_btn=None,
     storage_dropdown=None,
     threading=None,
+    timezone=None,
     uuid=None,
     worker_log=None,
 ):
-    selected_backend = storage_dropdown.value if storage_dropdown else "huggingface"
+    selected_backend = storage_dropdown.value if storage_dropdown is not None else "huggingface"
+    def _claimable(manifest):
+        status = manifest.get("status")
+        if status == "QUEUED":
+            return True
+        if status == "PAUSED":
+            retry_after = manifest.get("runtime", {}).get("retry_after")
+            if not retry_after:
+                return True
+            try:
+                retry_at = datetime.fromisoformat(str(retry_after).replace("Z", "+00:00"))
+                if retry_at.tzinfo is None:
+                    retry_at = retry_at.replace(tzinfo=timezone.utc)
+                return retry_at <= datetime.now(timezone.utc)
+            except (TypeError, ValueError):
+                return True
+        if status != "RUNNING":
+            return False
+        heartbeat = manifest.get("runtime", {}).get("last_heartbeat_at") or manifest.get("updated_at")
+        try:
+            stamp = datetime.fromisoformat(str(heartbeat).replace("Z", "+00:00"))
+            if stamp.tzinfo is None:
+                stamp = stamp.replace(tzinfo=timezone.utc)
+            age = (datetime.now(timezone.utc) - stamp).total_seconds()
+            return age > 480
+        except (TypeError, ValueError):
+            return True
     runner_state = {
         "status": "IDLE",
         "progress": 0,
@@ -1023,7 +1128,7 @@ def execution_and_background_worker(
         "error": "",
     }
 
-    if stop_btn and stop_btn.value:
+    if stop_btn is not None and stop_btn.value:
         runner_state.update(status="STOPPED", message="Đã dừng phiên MoLab theo yêu cầu.")
         status_html = mo.Html(f"""
         <div id="novelreader-status" data-status="STOPPED" data-progress="0" data-done="0" data-total="0" data-result-link="" style="padding: 12px; background: #ffebee; border-left: 4px solid #f44336; border-radius: 4px;">
@@ -1032,9 +1137,9 @@ def execution_and_background_worker(
         """)
         mo.output.append(status_html)
 
-    elif run_btn and run_btn.value:
+    elif run_btn is not None and run_btn.value:
         try:
-            uploaded_file = file_uploader.value if file_uploader else None
+            uploaded_file = file_uploader.value if file_uploader is not None else None
             file_bytes = None
             filename = "source.txt"
 
@@ -1052,7 +1157,11 @@ def execution_and_background_worker(
             if not file_bytes:
                 runner_state.update(status="FAILED", error="Vui lòng tải lên file truyện gốc (.txt hoặc .epub)")
             else:
-                config_data = json.loads(config_input.value) if config_input and config_input.value else DEFAULT_JOB_CONFIG
+                config_data = (
+                    json.loads(config_input.value)
+                    if config_input is not None and config_input.value
+                    else DEFAULT_JOB_CONFIG
+                )
                 job_id = str(uuid.uuid4())
                 api = create_store(selected_backend)
                 app_folder = api.ensure_folder(BOT_APP_FOLDER)
@@ -1140,10 +1249,16 @@ def execution_and_background_worker(
                             if row.get("type") != "dir":
                                 continue
                             m = api.get_json(row["path"], "job.json")
-                            if m and m.get("status") in ("QUEUED", "RUNNING"):
+                            if m and _claimable(m):
                                 pending = (row["path"], m)
                                 break
                         if pending:
+                            if pending[1].get("status") == "RUNNING":
+                                stale_runtime = pending[1].setdefault("runtime", {})
+                                stale_runtime["pause_reason"] = "Không nhận heartbeat trong 8 phút; phiên trước được khôi phục."
+                                stale_runtime["paused_at"] = now_iso()
+                                pending[1]["status"] = "PAUSED"
+                                update_manifest(api, pending[0], pending[1])
                             worker_log.info(f"Processing job {pending[1]['job_id']}")
                             try:
                                 process_job_pipeline(api, pending[0], pending[1])

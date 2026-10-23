@@ -7,10 +7,11 @@ Hệ thống tự động hóa xử lý tiểu thuyết Trung → Việt và chu
 1. **Telegram Bot**: Nhận file truyện gốc (`.txt` hoặc `.epub`), quản lý cấu hình wizard/preset và gửi job.
 2. **GitHub Actions**: Chạy bot Telegram trên Ubuntu và worker hàng đợi trên Windows self-hosted runner song song trong cùng lịch workflow; cả hai phối hợp qua Hugging Face, bot tự bàn giao trước giới hạn 6 giờ.
 3. **MoLab Notebook (`https://molab.marimo.io/notebooks`)**:
-   - Truy cập notebook `notebook/NovelReader_Auto_Run.py`.
+   - Truy cập notebook `notebook/NovelReader_Auto_Run_Import.py`.
    - Nạp file truyện và JSON cấu hình trực tiếp hoặc qua bucket.
    - Nhấn **Run** kích hoạt pipeline: phân tích cấu trúc, dịch thuật (HachimiMT), tạo audio (Piper / VieNeu TTS), gộp chương.
-   - Hiển thị tiến trình thời gian thực và đồng bộ SQLite checkpoint định kỳ (mỗi 90s).
+   - MoLab chỉ xử lý dịch/TTS. SQLite checkpoint, file chương đã tạo và manifest được lưu ở Hugging Face; heartbeat/checkpoint được cập nhật khi trạng thái chương đổi và tối đa mỗi 90 giây.
+   - Khi phiên MoLab hoặc worker kết thúc, job chuyển sang `PAUSED`; bot/API gửi lại job để phiên mới nạp checkpoint và tiếp tục.
    - Tự động nén `result.zip` và lưu cùng job/checkpoint trên Hugging Face bucket.
 4. **Trả kết quả & Giải phóng tài nguyên**:
    - Browser controller lấy link tải công khai và gửi thông báo qua Telegram.
@@ -21,7 +22,7 @@ Hệ thống tự động hóa xử lý tiểu thuyết Trung → Việt và chu
 ## Cách sử dụng trên MoLab (`https://molab.marimo.io`)
 
 1. Truy cập [MoLab Marimo](https://molab.marimo.io/notebooks) hoặc tạo notebook mới.
-2. Nhập mã nguồn từ tệp [`notebook/NovelReader_Auto_Run.py`](notebook/NovelReader_Auto_Run.py).
+2. Nhập mã nguồn từ tệp [`notebook/NovelReader_Auto_Run_Import.py`](notebook/NovelReader_Auto_Run_Import.py).
 3. Có 2 cách vận hành:
    - **Chế độ giao diện trực quan (UI Mode / Browser Controller)**:
      - Chọn hoặc kéo thả file `.txt` / `.epub` vào ô tải file.
@@ -61,7 +62,7 @@ python -m browser.molab_controller --notebook-url "https://molab.marimo.io/noteb
 pip install -r requirements-dev.txt
 python -m compileall -q app notebook browser tests
 python -m unittest discover -s tests -v
-marimo check notebook/NovelReader_Auto_Run.py
+marimo check notebook/NovelReader_Auto_Run_Import.py
 ```
 
 ## Lưu trữ Hugging Face và MoLab app công khai
@@ -85,6 +86,7 @@ Trong GitHub repository → **Settings → Secrets and variables → Actions**, 
 1. Bấm **Run workflow** để khởi động bot Telegram.
 2. Gửi truyện, chỉnh cấu hình nếu cần rồi bấm **Bắt đầu**. Bot lưu job vào HF và gửi mã job sang GitHub.
 3. Workflow job mở [URL app MoLab công khai](https://molab.marimo.io/notebooks/nb_LUac1bjo4xszP8PzayfLSN/app), chạy notebook, lưu kết quả; bot gửi link về Telegram. Không cần VM self-hosted hay đăng nhập MoLab.
+4. Nếu giới hạn thời gian kết thúc trước khi hoàn tất, worker lưu trạng thái `PAUSED`. Bot liên tục phát hiện và gửi lại job; phiên tiếp theo khôi phục database và file đầu ra đã đồng bộ.
 
 ### Sơ đồ chữ: một nút Bắt đầu chạy toàn bộ job
 
@@ -92,8 +94,8 @@ Trong GitHub repository → **Settings → Secrets and variables → Actions**, 
 Push main / lịch 5 giờ / Run workflow (không có menu mode)
                        │
                        ▼
-        GitHub Actions chạy Telegram bot liên tục
-        (Ubuntu, watchdog tự restart và bàn giao)
+        Telegram Bot/API chạy liên tục
+        (GitHub Actions, watchdog tự bàn giao)
                        │
      Gửi EPUB/TXT + bấm nút Bắt đầu trong Telegram
                        │
@@ -103,11 +105,15 @@ Push main / lịch 5 giờ / Run workflow (không có menu mode)
        Bot gửi repository_dispatch(job_id) sang GitHub
                        │
                        ▼
-       Workflow Windows xử lý đúng job theo trình tự
-       Mở MoLab → chạy notebook → lưu kết quả lên HF
+       Workflow Windows mở MoLab cho đúng job
+       Notebook dịch/TTS, lưu checkpoint và file lên HF
                        │
-                       ▼
-       Bot Telegram gửi trạng thái và link kết quả
+         ┌─────────────┴───────────────┐
+         │ chưa xong                    │ hoàn tất
+         ▼                             ▼
+     PAUSED → Bot gửi lại          COMPLETED/ERRORS
+     mở phiên mới, khôi phục       Bot gửi link kết quả
+     checkpoint, tiếp tục
 ```
 
-Bot khởi động khi push lên `main`, theo lịch dự phòng mỗi 5 giờ hoặc khi bấm **Run workflow**. Watchdog xếp lượt bot tiếp theo ở phút 320, chờ chu kỳ poll hiện tại kết thúc rồi bàn giao; trạng thái đã lưu trên HF nên không mất khi runner đổi lượt.
+Trạng thái job: `QUEUED → RUNNING → PAUSED → RUNNING → COMPLETED` (hoặc `COMPLETED_WITH_ERRORS` / `FAILED`). Bot khởi động khi push lên `main`, theo lịch dự phòng mỗi 5 giờ hoặc khi bấm **Run workflow**. Watchdog xếp lượt bot tiếp theo ở phút 320; trạng thái, checkpoint và đầu ra đã lưu trên HF nên job có thể tiếp tục sau khi runner hoặc phiên MoLab đổi lượt.

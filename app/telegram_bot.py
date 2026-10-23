@@ -9,7 +9,7 @@ import os
 import time
 import uuid
 from copy import deepcopy
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any
 
@@ -406,6 +406,52 @@ class TelegramBot:
             if not chat_id:
                 continue
             notified = self.storage.get_json(folder, "notifications.json", {"errors": 0, "result": False})
+            if manifest.get("status") == "RUNNING":
+                runtime = manifest.setdefault("runtime", {})
+                heartbeat = runtime.get("last_heartbeat_at") or manifest.get("updated_at")
+                try:
+                    heartbeat_at = datetime.fromisoformat(str(heartbeat).replace("Z", "+00:00"))
+                    if heartbeat_at.tzinfo is None:
+                        heartbeat_at = heartbeat_at.replace(tzinfo=timezone.utc)
+                    heartbeat_stale = (datetime.now(timezone.utc) - heartbeat_at).total_seconds() > 480
+                except (TypeError, ValueError):
+                    heartbeat_stale = True
+                if heartbeat_stale:
+                    manifest["status"] = "PAUSED"
+                    manifest["updated_at"] = utcnow()
+                    runtime.update(
+                        paused_at=manifest["updated_at"],
+                        pause_reason="Không nhận heartbeat trong 8 phút; job cần phiên MoLab mới.",
+                        retry_after=(datetime.now(timezone.utc) + timedelta(seconds=30)).isoformat(timespec="seconds"),
+                    )
+                    self.storage.put_json(folder, "job.json", manifest)
+            if manifest.get("status") == "PAUSED":
+                runtime = manifest.setdefault("runtime", {})
+                retry_after = runtime.get("retry_after")
+                try:
+                    ready_to_resume = not retry_after or datetime.fromisoformat(
+                        retry_after.replace("Z", "+00:00")
+                    ) <= datetime.now(timezone.utc)
+                except (TypeError, ValueError):
+                    ready_to_resume = True
+                if ready_to_resume:
+                    manifest["status"] = "QUEUED"
+                    manifest["updated_at"] = utcnow()
+                    runtime["last_resume_dispatch_at"] = manifest["updated_at"]
+                    runtime.pop("retry_after", None)
+                    self.storage.put_json(folder, "job.json", manifest)
+                    try:
+                        self.dispatch_job(manifest["job_id"])
+                        log.info("Dispatched paused job %s to resume from its checkpoint", manifest["job_id"])
+                    except Exception as exc:
+                        manifest["status"] = "PAUSED"
+                        manifest["updated_at"] = utcnow()
+                        manifest.setdefault("runtime", {})["retry_after"] = (
+                            datetime.now(timezone.utc) + timedelta(minutes=2)
+                        ).isoformat(timespec="seconds")
+                        manifest.setdefault("runtime", {})["last_resume_error"] = str(exc)[:1000]
+                        self.storage.put_json(folder, "job.json", manifest)
+                        log.exception("Could not dispatch paused job %s", manifest.get("job_id"))
             errors = manifest.get("errors", [])
             while notified.get("errors", 0) < len(errors):
                 error = errors[notified.get("errors", 0)]
