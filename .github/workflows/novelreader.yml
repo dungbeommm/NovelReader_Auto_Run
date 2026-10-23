@@ -3,9 +3,14 @@ name: NovelReader automation
 on:
   push:
     branches: [main]
+    paths-ignore:
+      - "**.md"
+      - "docs/**"
+      - "LICENSE"
+      - ".gitignore"
   pull_request:
   schedule:
-    - cron: "*/5 * * * *"
+    - cron: "0 */5 * * *"
   repository_dispatch:
     types: [novelreader_job]
   workflow_dispatch:
@@ -13,7 +18,7 @@ on:
       mode:
         description: Workflow execution mode
         required: true
-        default: health-check
+        default: poll-telegram
         type: choice
         options:
           - health-check
@@ -39,14 +44,15 @@ jobs:
       - run: marimo check notebook/NovelReader_Auto_Run.py
 
   poll-telegram:
-    if: github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.mode == 'poll-telegram')
+    if: github.event_name == 'schedule' || (github.event_name == 'push' && github.ref == 'refs/heads/main') || (github.event_name == 'workflow_dispatch' && inputs.mode == 'poll-telegram')
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 360
     concurrency:
-      group: novelreader-telegram-poller
+      group: continuous-telegram-bot
       cancel-in-progress: false
     permissions:
       contents: write
+      actions: write
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -54,7 +60,7 @@ jobs:
           python-version: "3.12"
           cache: pip
       - run: python -m pip install -r requirements.txt
-      - name: Poll Telegram and dispatch queued jobs
+      - name: Run Telegram bot with continuous watchdog and handover
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           ALLOWED_TELEGRAM_USER_IDS: ${{ secrets.ALLOWED_TELEGRAM_USER_IDS }}
@@ -64,15 +70,15 @@ jobs:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
           GITHUB_ACTIONS_TOKEN: ${{ github.token }}
           GITHUB_REPOSITORY: ${{ github.repository }}
-        run: python -m app.telegram_bot --poll-seconds 220
+          NOVELREADER_WORKFLOW_FILE: novelreader.yml
+          PYTHONUNBUFFERED: "1"
+          PYTHONUTF8: "1"
+        run: python -m app.github_runner
 
   run-molab-browser:
     if: github.event_name == 'repository_dispatch' || (github.event_name == 'workflow_dispatch' && inputs.mode == 'run-molab-browser')
     runs-on: [self-hosted, Windows, molab-vm]
     timeout-minutes: 330
-    concurrency:
-      group: novelreader-molab-profile
-      cancel-in-progress: false
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5

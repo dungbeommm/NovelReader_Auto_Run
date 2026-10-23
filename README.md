@@ -5,7 +5,7 @@ Hệ thống tự động hóa xử lý tiểu thuyết Trung → Việt và chu
 ## Kiến trúc hệ thống
 
 1. **Telegram Bot**: Nhận file truyện gốc (`.txt` hoặc `.epub`), quản lý cấu hình wizard/preset và gửi job.
-2. **GitHub Actions**: Poll Telegram trên GitHub-hosted runner; chạy MoLab Browser Controller trên Windows self-hosted runner với profile đăng nhập mã hóa trong Hugging Face.
+2. **GitHub Actions**: Giữ Telegram bot chạy liên tục trên GitHub-hosted runner, tự bàn giao trước giới hạn 6 giờ; chạy MoLab Browser Controller trên Windows self-hosted runner với profile đăng nhập mã hóa trong Hugging Face.
 3. **MoLab Notebook (`https://molab.marimo.io/notebooks`)**:
    - Truy cập notebook `notebook/NovelReader_Auto_Run.py`.
    - Nạp file truyện và JSON cấu hình trực tiếp hoặc qua bucket.
@@ -89,7 +89,16 @@ python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().d
 
 1. Dùng Windows VM có Remote Desktop. Cài Python 3.12 và đăng ký VM làm GitHub self-hosted Actions runner với labels `self-hosted`, `Windows`, `molab-vm`.
 2. Đăng nhập Windows bằng Remote Desktop và chạy agent runner trong desktop người dùng hiện tại, ví dụ `run.cmd`. Không chạy runner dưới dạng Windows Service cho bước đăng nhập đầu tiên; service chạy trong session nền nên cửa sổ Chromium không hiện trên desktop.
-3. Giữ runner online và đăng nhập VM bằng Remote Desktop. Gửi truyện cho Telegram bot rồi bấm **Bắt đầu**. GitHub-hosted poller nhận nút bấm, lưu job lên HF rồi phát `repository_dispatch`.
-4. Lần chạy đầu, Windows runner tự mở cửa sổ Chromium trên desktop VM. Đăng nhập MoLab; job sẽ tự mã hóa profile lên HF rồi tiếp tục chạy. Những lần sau runner tự khôi phục profile, mở notebook và chờ job hoàn tất.
+3. Giữ Telegram workflow và Windows runner online; đăng nhập VM bằng Remote Desktop. Gửi truyện cho bot rồi bấm **Bắt đầu**. Poller liên tục nhận callback, lưu job lên HF rồi phát `repository_dispatch` ngay.
+4. Lần đầu, Windows runner tự mở cửa sổ Chromium trên desktop VM. Đăng nhập MoLab; job mã hóa profile lên HF rồi tiếp tục chạy. Những lần sau runner tự khôi phục profile, mở notebook và chờ job hoàn tất.
 
 Nếu MoLab hết phiên đăng nhập, lần bấm **Bắt đầu** tiếp theo sẽ mở lại Chromium để bạn đăng nhập. Phải giữ nguyên `MOLAB_PROFILE_ENCRYPTION_KEY` để khôi phục profile. Nếu mất khóa, xóa `novelreader/auth/molab-profile.enc` khỏi bucket rồi gửi job mới và đăng nhập lại. Do bucket công khai, người khác có thể tải ciphertext; họ vẫn cần khóa bí mật để giải mã.
+
+### Trình tự workflow liên tục
+
+1. Workflow khởi động khi push lên `main`, theo lịch dự phòng mỗi 5 giờ, hoặc khi chọn `poll-telegram` trong **Run workflow**.
+2. Job `poll-telegram` chạy bot trên Ubuntu. Watchdog khởi động lại bot nếu tiến trình dừng; manifest, hàng đợi và trạng thái người dùng được lưu trên HF nên vẫn còn sau khi runner thay thế.
+3. Khi bấm **Bắt đầu**, bot cập nhật manifest thành `QUEUED` trên HF rồi gọi `repository_dispatch` để mở `run-molab-browser` trên Windows runner.
+4. Windows controller khôi phục profile đã mã hóa. Nếu chưa có hoặc MoLab yêu cầu đăng nhập, Chromium hiện trên desktop VM; sau khi đăng nhập, controller mã hóa profile lên HF, mở lại notebook và chờ job.
+5. Notebook xử lý và lưu tiến độ/sản phẩm trên HF. Bot liên tục đọc manifest, rồi gửi trạng thái/lỗi/link kết quả về Telegram.
+6. Sau 5 giờ 20 phút, watchdog xếp workflow bot kế tiếp qua `workflow_dispatch`, chờ bàn giao ngắn rồi dừng bot hiện tại trước timeout 6 giờ.
