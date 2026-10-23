@@ -80,7 +80,7 @@ jobs:
 
   run-molab-browser:
     if: github.event_name == 'schedule' || (github.event_name == 'push' && github.ref == 'refs/heads/main') || github.event_name == 'workflow_dispatch'
-    runs-on: [self-hosted, Windows, molab-vm]
+    runs-on: windows-latest
     timeout-minutes: 330
     concurrency:
       group: continuous-molab-worker

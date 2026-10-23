@@ -80,11 +80,11 @@ Trong GitHub repository → **Settings → Secrets and variables → Actions**, 
 
 `HF_TOKEN` phải được cấu hình riêng trong runtime MoLab và trong GitHub Actions; hai môi trường không chia sẻ biến môi trường. Token cần quyền ghi bucket. Nếu thiếu token hoặc worker gặp lỗi khi xử lý job, manifest sẽ chuyển sang `FAILED` và bot gửi chi tiết lỗi.
 
-### Cài Windows runner có màn hình
+### Chạy workflow phối hợp
 
-1. Dùng Windows VM và đăng ký VM làm GitHub self-hosted Actions runner với labels `self-hosted`, `Windows`, `molab-vm`.
-2. Bấm **Run workflow** để khởi động cả bot Telegram và Windows queue worker; hai job chạy đồng thời.
-3. Gửi truyện cho bot rồi bấm **Bắt đầu**. Windows worker nhận job từ hàng đợi và mở [URL app MoLab công khai](https://molab.marimo.io/notebooks/nb_Xbo9yBAiW4wEx3M96hNnz4/app). Không cần phiên đăng nhập MoLab hay profile trình duyệt lưu trên HF.
+1. Bấm **Run workflow** để khởi động bot Telegram và Windows queue worker song song.
+2. Worker dùng runner `windows-latest` do GitHub cấp, poll hàng đợi HF và mở [URL app MoLab công khai](https://molab.marimo.io/notebooks/nb_Xbo9yBAiW4wEx3M96hNnz4/app). Không cần VM self-hosted, phiên đăng nhập MoLab hay profile trình duyệt lưu trên HF.
+3. Gửi truyện cho bot rồi bấm **Bắt đầu**; worker tự nhận job từ hàng đợi chung.
 
 ### Sơ đồ chữ: một nút Bắt đầu chạy toàn bộ job
 
