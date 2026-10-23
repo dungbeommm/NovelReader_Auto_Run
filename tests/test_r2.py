@@ -4,7 +4,7 @@ import unittest
 from copy import deepcopy
 from pathlib import Path
 from tempfile import TemporaryDirectory
-from unittest.mock import Mock
+from unittest.mock import Mock, patch
 
 import jsonschema
 
@@ -49,6 +49,11 @@ class R2ContractTests(unittest.TestCase):
     def test_invalid_path_component(self):
         with self.assertRaises(ValueError):
             self.store.child(self.store.root_id, "../escape")
+
+    def test_missing_configuration_lists_all_required_names(self):
+        with patch.dict("os.environ", {}, clear=True):
+            with self.assertRaisesRegex(RuntimeError, "R2_BUCKET, R2_ACCOUNT_ID, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY"):
+                R2Store()
 
 
 class BotStorageTests(unittest.TestCase):

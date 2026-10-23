@@ -53,10 +53,13 @@ jobs:
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           ALLOWED_TELEGRAM_USER_IDS: ${{ secrets.ALLOWED_TELEGRAM_USER_IDS }}
-          STORAGE_BACKEND: ${{ vars.STORAGE_BACKEND || 'r2' }}
-          R2_ACCOUNT_ID: ${{ vars.R2_ACCOUNT_ID }}
-          R2_BUCKET: ${{ vars.R2_BUCKET }}
-          R2_ROOT_PREFIX: ${{ vars.R2_ROOT_PREFIX }}
+          STORAGE_BACKEND: ${{ vars.STORAGE_BACKEND || 'huggingface' }}
+          HF_BUCKET_ID: ${{ vars.HF_BUCKET_ID || secrets.HF_BUCKET_ID || 'uri410/audio' }}
+          HF_ROOT_PREFIX: ${{ vars.HF_ROOT_PREFIX || secrets.HF_ROOT_PREFIX }}
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+          R2_ACCOUNT_ID: ${{ vars.R2_ACCOUNT_ID || secrets.R2_ACCOUNT_ID }}
+          R2_BUCKET: ${{ vars.R2_BUCKET || secrets.R2_BUCKET }}
+          R2_ROOT_PREFIX: ${{ vars.R2_ROOT_PREFIX || secrets.R2_ROOT_PREFIX }}
           R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
           R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
           PIXELDRAIN_API_KEY: ${{ secrets.PIXELDRAIN_API_KEY }}
@@ -75,10 +78,13 @@ jobs:
       - run: pip install -r requirements.txt
       - name: Check storage connection
         env:
-          STORAGE_BACKEND: ${{ vars.STORAGE_BACKEND || 'r2' }}
-          R2_ACCOUNT_ID: ${{ vars.R2_ACCOUNT_ID }}
-          R2_BUCKET: ${{ vars.R2_BUCKET }}
-          R2_ROOT_PREFIX: ${{ vars.R2_ROOT_PREFIX }}
+          STORAGE_BACKEND: ${{ vars.STORAGE_BACKEND || 'huggingface' }}
+          HF_BUCKET_ID: ${{ vars.HF_BUCKET_ID || secrets.HF_BUCKET_ID || 'uri410/audio' }}
+          HF_ROOT_PREFIX: ${{ vars.HF_ROOT_PREFIX || secrets.HF_ROOT_PREFIX }}
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+          R2_ACCOUNT_ID: ${{ vars.R2_ACCOUNT_ID || secrets.R2_ACCOUNT_ID }}
+          R2_BUCKET: ${{ vars.R2_BUCKET || secrets.R2_BUCKET }}
+          R2_ROOT_PREFIX: ${{ vars.R2_ROOT_PREFIX || secrets.R2_ROOT_PREFIX }}
           R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
           R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
           PIXELDRAIN_API_KEY: ${{ secrets.PIXELDRAIN_API_KEY }}
@@ -87,6 +93,9 @@ jobs:
           python - <<'PY'
           from app.storage import create_store
           store = create_store()
+          app = store.ensure_folder("NovelReader_Auto_Run")
+          store.put_json(app, "healthcheck.json", {"ok": True})
+          assert store.get_json(app, "healthcheck.json") == {"ok": True}
           store.list_children(store.root_id)
           print(f"Storage connection OK: {type(store).__name__}")
           PY

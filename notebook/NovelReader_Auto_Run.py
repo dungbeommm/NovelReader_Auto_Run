@@ -1,4 +1,4 @@
-"""MoLab notebook worker. Configure R2 credentials before running."""
+"""MoLab notebook worker. Configure Hugging Face bucket access before running."""
 import marimo
 
 __generated_with = "0.25.2"
@@ -11,8 +11,8 @@ def _(mo):
     # NovelReader Auto Run
 
     Notebook worker cho job Telegram. Worker đọc manifest và đồng bộ checkpoint, kết quả
-    vào Cloudflare R2. Hãy cấu hình R2_ACCOUNT_ID, R2_BUCKET, R2_ACCESS_KEY_ID,
-    R2_SECRET_ACCESS_KEY trong runtime MoLab trước khi chạy notebook.
+    vào Hugging Face Storage Bucket `uri410/audio`. Hãy cấu hình `HF_TOKEN` có quyền ghi
+    trong runtime MoLab trước khi chạy notebook.
     """)
     return
 
@@ -25,6 +25,7 @@ def _():
     for package in ("requests", "boto3"):
         if importlib.util.find_spec(package) is None:
             _subprocess.run([_sys.executable, "-m", "pip", "install", package], check=True)
+    _subprocess.run([_sys.executable, "-m", "pip", "install", "huggingface_hub>=1.6,<2"], check=True)
     requests_ready = True
     return (requests_ready,)
 
@@ -52,6 +53,9 @@ def _(requests_ready, mo):
     import boto3
     from botocore.client import Config
     from botocore.exceptions import ClientError
+    from huggingface_hub import batch_bucket_files, bucket_info, download_bucket_files, list_bucket_tree
+    from huggingface_hub.errors import EntryNotFoundError
+    import tempfile
     from urllib.parse import quote
 
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
@@ -224,13 +228,85 @@ def _(requests_ready, mo):
             return self.client.generate_presigned_url("get_object",
                 Params={"Bucket": self.bucket, "Key": self.child(path, "result.zip")}, ExpiresIn=604800)
 
+    class HuggingFaceStore:
+        def __init__(self):
+            self.bucket = (os.environ.get("HF_BUCKET_ID") or "uri410/audio").strip("/")
+            self.token = os.environ.get("HF_TOKEN", "").strip()
+            self.root_id = (os.environ.get("HF_ROOT_PREFIX") or "novelreader").strip("/")
+            if not self.token:
+                raise RuntimeError("HF_TOKEN is missing in the MoLab runtime")
+            if len(self.bucket.split("/")) != 2 or not all(self.bucket.split("/")):
+                raise ValueError("HF_BUCKET_ID must be namespace/bucket")
+            if not self.root_id or any(p in ("", ".", "..") or "\\" in p for p in self.root_id.split("/")):
+                raise ValueError("HF_ROOT_PREFIX must contain safe path components")
+            bucket_info(self.bucket, token=self.token)
+
+        @staticmethod
+        def child(parent, name):
+            if not name or name in (".", "..") or "/" in name or "\\" in name:
+                raise ValueError(f"Invalid bucket path component: {name!r}")
+            return parent.rstrip("/") + "/" + name
+
+        def ensure_folder(self, name, parent_id=None):
+            return self.child(parent_id or self.root_id, name)
+
+        def list_children(self, parent_id):
+            prefix = parent_id.rstrip("/") + "/"
+            rows = []
+            for item in list_bucket_tree(self.bucket, prefix=prefix, recursive=False, token=self.token):
+                path = item.path.rstrip("/")
+                if path == prefix.rstrip("/") or not path.startswith(prefix):
+                    continue
+                rows.append({"name": path[len(prefix):], "path": path,
+                    "type": "dir" if item.type == "directory" else "file"})
+            return rows
+
+        def find(self, parent_id, name):
+            self.child(parent_id, name)
+            return next((row for row in self.list_children(parent_id) if row["name"] == name), None)
+
+        def put_json(self, parent_id, name, data):
+            path = self.child(parent_id, name)
+            batch_bucket_files(self.bucket,
+                add=[(json.dumps(data, ensure_ascii=False, indent=2).encode("utf-8"), path)], token=self.token)
+            return path
+
+        def get_json(self, parent_id, name, default=None):
+            path = self.child(parent_id, name)
+            with tempfile.TemporaryDirectory(prefix="novelreader-hf-") as directory:
+                target = Path(directory) / name
+                try:
+                    download_bucket_files(self.bucket, files=[(path, target)],
+                        raise_on_missing_files=True, token=self.token)
+                except EntryNotFoundError:
+                    return default
+                return json.loads(target.read_text(encoding="utf-8"))
+
+        def upload(self, path, parent_id, name=None):
+            target = self.child(parent_id, name or path.name)
+            batch_bucket_files(self.bucket, add=[(path, target)], token=self.token)
+            return {"path": target}
+
+        def download(self, file_id, target):
+            target.parent.mkdir(parents=True, exist_ok=True)
+            download_bucket_files(self.bucket, files=[(file_id, target)],
+                raise_on_missing_files=True, token=self.token)
+            return target
+
+        def share_link_reader(self, path):
+            key = self.child(path, "result.zip")
+            encoded = "/".join(quote(segment, safe="") for segment in key.split("/"))
+            return f"https://huggingface.co/buckets/{self.bucket}/resolve/{encoded}"
+
     def create_store():
-        backend = os.environ.get("STORAGE_BACKEND", "r2").strip().lower()
+        backend = os.environ.get("STORAGE_BACKEND", "huggingface").strip().lower()
+        if backend in ("huggingface", "hf"):
+            return HuggingFaceStore()
         if backend == "r2":
             return R2Store()
         if backend == "pixeldrain":
             return PixeldrainStore()
-        raise ValueError("STORAGE_BACKEND must be r2 or pixeldrain")
+        raise ValueError("STORAGE_BACKEND must be huggingface, r2 or pixeldrain")
 
     def upload_paths(api, local_root, parent_id):
         root = Path(local_root)
@@ -487,9 +563,14 @@ def _(requests_ready, mo):
             worker_stop.wait(35)
 
 
-    storage_backend = os.environ.get("STORAGE_BACKEND", "r2").strip().lower()
-    configured = bool(os.environ.get("PIXELDRAIN_API_KEY")) if storage_backend == "pixeldrain" else all(
-        os.environ.get(name) for name in ("R2_ACCOUNT_ID", "R2_BUCKET", "R2_ACCESS_KEY_ID", "R2_SECRET_ACCESS_KEY"))
+    storage_backend = os.environ.get("STORAGE_BACKEND", "huggingface").strip().lower()
+    if storage_backend in ("huggingface", "hf"):
+        configured = bool(os.environ.get("HF_TOKEN"))
+    elif storage_backend == "pixeldrain":
+        configured = bool(os.environ.get("PIXELDRAIN_API_KEY"))
+    else:
+        configured = all(os.environ.get(name) for name in
+            ("R2_ACCOUNT_ID", "R2_BUCKET", "R2_ACCESS_KEY_ID", "R2_SECRET_ACCESS_KEY"))
     if configured and not getattr(threading, "_novelreader_worker_started", False):
         thread = threading.Thread(target=worker_loop, name="novelreader-storage-worker", daemon=True)
         thread.start()

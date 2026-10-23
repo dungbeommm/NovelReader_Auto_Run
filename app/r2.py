@@ -13,17 +13,23 @@ from botocore.exceptions import ClientError
 class R2Store:
     def __init__(self, client=None, bucket: str | None = None, root_id: str | None = None) -> None:
         self.bucket = bucket or os.environ.get("R2_BUCKET", "").strip()
-        if not self.bucket:
-            raise RuntimeError("R2_BUCKET is missing")
+        account = os.environ.get("R2_ACCOUNT_ID", "").strip()
+        key = os.environ.get("R2_ACCESS_KEY_ID", "").strip()
+        secret = os.environ.get("R2_SECRET_ACCESS_KEY", "").strip()
+        required = {"R2_BUCKET": self.bucket}
+        if client is None:
+            required.update({"R2_ACCOUNT_ID": account, "R2_ACCESS_KEY_ID": key,
+                             "R2_SECRET_ACCESS_KEY": secret})
+        missing = [name for name, value in required.items() if not value]
+        if missing:
+            raise RuntimeError(
+                "Missing Cloudflare R2 settings: " + ", ".join(missing) + ". "
+                "Set them in GitHub Actions Variables or Secrets and in the MoLab runtime."
+            )
         self.root_id = (root_id or os.environ.get("R2_ROOT_PREFIX") or "novelreader").strip("/")
         if not self.root_id or any(p in ("", ".", "..") for p in self.root_id.split("/")):
             raise ValueError("R2_ROOT_PREFIX must contain safe path components")
         if client is None:
-            account = os.environ.get("R2_ACCOUNT_ID", "").strip()
-            key = os.environ.get("R2_ACCESS_KEY_ID", "").strip()
-            secret = os.environ.get("R2_SECRET_ACCESS_KEY", "").strip()
-            if not all((account, key, secret)):
-                raise RuntimeError("R2_ACCOUNT_ID, R2_ACCESS_KEY_ID and R2_SECRET_ACCESS_KEY are required")
             client = boto3.client(
                 "s3", endpoint_url=f"https://{account}.r2.cloudflarestorage.com",
                 aws_access_key_id=key, aws_secret_access_key=secret,

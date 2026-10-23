@@ -370,7 +370,7 @@ class TelegramBot:
                 sharing = manifest.get("config", {}).get("storage", manifest.get("config", {}).get("pixeldrain", {})).get("sharing")
                 link = self.storage.share_link_reader(result["result_path"]) if result.get("result_path") and sharing == "link_reader" else "(kết quả riêng tư, chưa có link)"
                 counts = manifest.get("progress", {})
-                self.send(int(chat_id), f"Job {manifest['job_id']}: {manifest['status']}\nChương {counts.get('done_chapters', 0)}/{counts.get('total_chapters', 0)}; lỗi {counts.get('failed_chapters', 0)}\nKết quả: {link}\nDùng /result để lấy link mới khi link cũ hết hạn.")
+                self.send(int(chat_id), f"Job {manifest['job_id']}: {manifest['status']}\nChương {counts.get('done_chapters', 0)}/{counts.get('total_chapters', 0)}; lỗi {counts.get('failed_chapters', 0)}\nKết quả: {link}\nDùng /result để xem lại link kết quả.")
                 notified["result"] = True
                 self.storage.put_json(folder, "notifications.json", notified)
 
