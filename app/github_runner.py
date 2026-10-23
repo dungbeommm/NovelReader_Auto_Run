@@ -21,11 +21,11 @@ HANDOVER_DRAIN_SECONDS = POLL_SECONDS + 30
 def dispatch_successor() -> bool:
     """Queue the next continuous poller run using this run's GITHUB_TOKEN."""
     repository = os.getenv("GITHUB_REPOSITORY", "").strip()
-    token = os.getenv("GITHUB_ACTIONS_TOKEN", "").strip()
+    token = os.getenv("ACTIONS_API_TOKEN", "").strip()
     workflow = os.getenv("NOVELREADER_WORKFLOW_FILE", "novelreader.yml").strip()
     ref = os.getenv("GITHUB_REF_NAME", "main").strip()
     if not repository or not token:
-        log.error("Cannot hand over: GITHUB_REPOSITORY or GITHUB_ACTIONS_TOKEN is missing")
+        log.error("Cannot hand over: GITHUB_REPOSITORY or ACTIONS_API_TOKEN is missing")
         return False
 
     response = requests.post(

@@ -174,9 +174,9 @@ class TelegramBot:
 
     def dispatch_job(self, job_id: str) -> None:
         repository = os.environ.get("GITHUB_REPOSITORY", "").strip()
-        token = os.environ.get("GITHUB_DISPATCH_TOKEN", "").strip()
+        token = os.environ.get("DISPATCH_API_TOKEN", "").strip()
         if not repository or not token:
-            raise RuntimeError("GITHUB_REPOSITORY and GITHUB_DISPATCH_TOKEN are required to start the MoLab workflow")
+            raise RuntimeError("GITHUB_REPOSITORY and DISPATCH_API_TOKEN are required to start the MoLab workflow")
         response = self.http.post(
             f"https://api.github.com/repos/{repository}/dispatches",
             headers={

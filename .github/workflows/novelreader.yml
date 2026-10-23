@@ -73,8 +73,8 @@ jobs:
           HF_BUCKET_ID: ${{ vars.HF_BUCKET_ID || 'uri410/audio' }}
           HF_ROOT_PREFIX: ${{ vars.HF_ROOT_PREFIX || 'novelreader' }}
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
-          GITHUB_ACTIONS_TOKEN: ${{ github.token }}
-          GITHUB_DISPATCH_TOKEN: ${{ github.token }}
+          ACTIONS_API_TOKEN: ${{ github.token }}
+          DISPATCH_API_TOKEN: ${{ github.token }}
           GITHUB_REPOSITORY: ${{ github.repository }}
           NOVELREADER_WORKFLOW_FILE: novelreader.yml
           PYTHONUNBUFFERED: "1"

@@ -97,7 +97,7 @@ class BotStorageTests(unittest.TestCase):
         user = bot._user("123")
         user["draft"] = {"job_id": "job-123", "config": deepcopy(DEFAULT_CONFIG)}
         with patch.dict("os.environ", {
-            "GITHUB_REPOSITORY": "owner/repo", "GITHUB_DISPATCH_TOKEN": "dispatch-token"
+            "GITHUB_REPOSITORY": "owner/repo", "DISPATCH_API_TOKEN": "dispatch-token"
         }):
             bot.handle({"callback_query": {"id": "callback", "from": {"id": 123},
                                            "message": {"chat": {"id": 456}}, "data": "start:job-123"}})
