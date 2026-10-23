@@ -72,6 +72,7 @@ GitHub Actions nhận Telegram job; job trình duyệt chạy trên Windows self
 Trong GitHub repository → **Settings → Secrets and variables → Actions**, thêm:
 
 - Secret `HF_TOKEN`: Hugging Face token có quyền ghi bucket.
+- Secret `GH_DISPATCH_TOKEN`: GitHub token dùng để gọi job Windows và tự bàn giao workflow. Token cần quyền `Actions: write` và `Contents: write` trên repo.
 - Secret `MOLAB_PROFILE_ENCRYPTION_KEY`: tạo một lần bằng lệnh sau trên máy cá nhân rồi lưu nguyên chuỗi kết quả vào secret. Không đăng chuỗi này lên repo hoặc HF:
 
 ```powershell
