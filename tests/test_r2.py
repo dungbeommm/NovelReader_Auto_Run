@@ -82,7 +82,7 @@ class BotStorageTests(unittest.TestCase):
         written_names = [call.args[1] for call in storage.put_json.call_args_list]
         self.assertEqual(written_names, ["notifications.json", "notifications.json"])
 
-    def test_start_queues_job_without_github_dispatch_token(self):
+    def test_start_dispatches_job_to_github_actions(self):
         storage = Mock()
         storage.ensure_folder.side_effect = lambda name, parent=None: (parent + "/" if parent else "novelreader/") + name
         storage.get_json.side_effect = lambda parent, name, default=None: (
@@ -92,12 +92,19 @@ class BotStorageTests(unittest.TestCase):
         bot = TelegramBot("token", {"123"}, storage)
         bot.call = Mock()
         bot.send = Mock()
-        bot.http.post = Mock()
+        response = Mock(status_code=204, text="")
+        bot.http.post = Mock(return_value=response)
         user = bot._user("123")
         user["draft"] = {"job_id": "job-123", "config": deepcopy(DEFAULT_CONFIG)}
-        bot.handle({"callback_query": {"id": "callback", "from": {"id": 123},
-                                       "message": {"chat": {"id": 456}}, "data": "start:job-123"}})
-        bot.http.post.assert_not_called()
+        with patch.dict("os.environ", {
+            "GITHUB_REPOSITORY": "owner/repo", "GITHUB_DISPATCH_TOKEN": "dispatch-token"
+        }):
+            bot.handle({"callback_query": {"id": "callback", "from": {"id": 123},
+                                           "message": {"chat": {"id": 456}}, "data": "start:job-123"}})
+        bot.http.post.assert_called_once()
+        self.assertEqual(bot.http.post.call_args.kwargs["json"], {
+            "event_type": "novelreader_job", "client_payload": {"job_id": "job-123"}
+        })
         manifest_writes = [call.args[2] for call in storage.put_json.call_args_list if call.args[1] == "job.json"]
         self.assertEqual(manifest_writes[-1]["status"], "QUEUED")
         self.assertIsNone(user["draft"])

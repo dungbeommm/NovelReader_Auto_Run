@@ -172,6 +172,24 @@ class TelegramBot:
         folder = self.storage.ensure_folder(job_id, self.jobs_folder)
         return folder, self.storage.get_json(folder, "job.json")
 
+    def dispatch_job(self, job_id: str) -> None:
+        repository = os.environ.get("GITHUB_REPOSITORY", "").strip()
+        token = os.environ.get("GITHUB_DISPATCH_TOKEN", "").strip()
+        if not repository or not token:
+            raise RuntimeError("GITHUB_REPOSITORY and GITHUB_DISPATCH_TOKEN are required to start the MoLab workflow")
+        response = self.http.post(
+            f"https://api.github.com/repos/{repository}/dispatches",
+            headers={
+                "Accept": "application/vnd.github+json",
+                "Authorization": f"Bearer {token}",
+                "X-GitHub-Api-Version": "2022-11-28",
+            },
+            json={"event_type": "novelreader_job", "client_payload": {"job_id": job_id}},
+            timeout=30,
+        )
+        if response.status_code != 204:
+            raise RuntimeError(f"GitHub dispatch failed: HTTP {response.status_code} {response.text[:500]}")
+
     def _handle_document(self, message: dict[str, Any], user_id: str) -> None:
         doc = message.get("document", {})
         name = doc.get("file_name", "")
@@ -255,7 +273,16 @@ class TelegramBot:
             user["last_job"] = draft["job_id"]
             self.save_state()
             story_name = draft.get("input", {}).get("name") or "truyện đã gửi"
-            self.send(chat_id, f"Đã xếp truyện '{story_name}' vào hàng đợi chung. Worker MoLab sẽ tự nhận job; bot gửi lỗi và link kết quả khi hoàn tất.")
+            try:
+                self.dispatch_job(draft["job_id"])
+            except Exception as exc:
+                manifest["status"] = "FAILED"
+                manifest["updated_at"] = utcnow()
+                manifest.setdefault("errors", []).append({"stage": "github_dispatch", "detail": str(exc)})
+                self.storage.put_json(folder, "job.json", manifest)
+                self.send(chat_id, f"Không khởi động được workflow cho '{story_name}': {exc}")
+            else:
+                self.send(chat_id, f"Đã gửi '{story_name}' sang GitHub Actions. Workflow sẽ mở MoLab, chạy notebook, lưu kết quả và gửi link về Telegram.")
             user["draft"] = None
             self.save_state()
 

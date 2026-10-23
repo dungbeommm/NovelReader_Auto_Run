@@ -18,7 +18,7 @@ def utcnow() -> str:
     return datetime.now(timezone.utc).isoformat(timespec="seconds")
 
 
-def next_job(store):
+def next_job(store, job_id: str | None = None):
     app_folder = store.ensure_folder("NovelReader_Auto_Run")
     jobs_folder = store.ensure_folder("jobs", app_folder)
     candidates = []
@@ -26,7 +26,7 @@ def next_job(store):
         if row.get("type") != "dir":
             continue
         manifest = store.get_json(row["path"], "job.json")
-        if manifest and manifest.get("status") in ("QUEUED", "RUNNING"):
+        if manifest and manifest.get("status") in ("QUEUED", "RUNNING") and (not job_id or manifest.get("job_id") == job_id):
             candidates.append((manifest.get("created_at", ""), row["path"], manifest))
     if not candidates:
         return None
@@ -41,15 +41,18 @@ def record_failure(store, folder: str, manifest: dict, detail: str) -> None:
     store.put_json(folder, "job.json", manifest)
 
 
-def run(notebook_url: str, idle_seconds: int, max_seconds: int) -> int:
+def run(notebook_url: str, idle_seconds: int, max_seconds: int, job_id: str | None = None) -> int:
     logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
     deadline = time.monotonic() + max_seconds
-    log.info("MoLab queue worker started; polling Hugging Face every %d seconds", idle_seconds)
+    log.info("MoLab worker started for %s", job_id or "oldest queued job")
 
     while time.monotonic() < deadline:
         store = create_store()
-        pending = next_job(store)
+        pending = next_job(store, job_id)
         if not pending:
+            if job_id:
+                log.error("Requested job %s was not found in QUEUED/RUNNING state", job_id)
+                return 1
             time.sleep(min(idle_seconds, max(1, int(deadline - time.monotonic()))))
             continue
 
@@ -97,6 +100,8 @@ def run(notebook_url: str, idle_seconds: int, max_seconds: int) -> int:
                     refreshed,
                     f"MoLab controller exited with code {result.returncode}. {detail}".strip(),
                 )
+            if job_id:
+                return result.returncode
         except Exception as exc:
             log.exception("Could not process story '%s'", story_name)
             refreshed = store.get_json(folder, "job.json") or manifest
@@ -118,8 +123,9 @@ def main() -> int:
     )
     parser.add_argument("--idle-seconds", type=int, default=20)
     parser.add_argument("--max-seconds", type=int, default=19000)
+    parser.add_argument("--job-id", default=os.getenv("NOVELREADER_JOB_ID"))
     args = parser.parse_args()
-    return run(args.notebook_url, max(5, args.idle_seconds), max(60, args.max_seconds))
+    return run(args.notebook_url, max(5, args.idle_seconds), max(60, args.max_seconds), args.job_id)
 
 
 if __name__ == "__main__":

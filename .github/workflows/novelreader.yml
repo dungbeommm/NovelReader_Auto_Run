@@ -12,6 +12,8 @@ on:
   schedule:
     - cron: "0 */5 * * *"
   workflow_dispatch:
+  repository_dispatch:
+    types: [novelreader_job]
 
 permissions:
   contents: read
@@ -31,7 +33,7 @@ jobs:
       - run: python -m unittest discover -s tests -v
       - run: marimo check notebook/NovelReader_Auto_Run.py
 
-  poll-telegram:
+  telegram-bot:
     if: github.event_name == 'schedule' || (github.event_name == 'push' && github.ref == 'refs/heads/main') || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     timeout-minutes: 360
@@ -72,19 +74,17 @@ jobs:
           HF_ROOT_PREFIX: ${{ vars.HF_ROOT_PREFIX || 'novelreader' }}
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
           GITHUB_ACTIONS_TOKEN: ${{ secrets.GH_DISPATCH_TOKEN }}
+          GITHUB_DISPATCH_TOKEN: ${{ secrets.GH_DISPATCH_TOKEN }}
           GITHUB_REPOSITORY: ${{ github.repository }}
           NOVELREADER_WORKFLOW_FILE: novelreader.yml
           PYTHONUNBUFFERED: "1"
           PYTHONUTF8: "1"
         run: python -m app.github_runner
 
-  run-molab-browser:
-    if: github.event_name == 'schedule' || (github.event_name == 'push' && github.ref == 'refs/heads/main') || github.event_name == 'workflow_dispatch'
+  process-job:
+    if: github.event_name == 'repository_dispatch' && github.event.action == 'novelreader_job'
     runs-on: windows-latest
     timeout-minutes: 330
-    concurrency:
-      group: continuous-molab-worker
-      cancel-in-progress: false
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -95,11 +95,12 @@ jobs:
         run: |
           python -m pip install -r requirements.txt playwright
           python -m playwright install chromium
-      - name: Poll shared Hugging Face queue and run MoLab jobs
+      - name: Process the Telegram job in MoLab
         env:
           MOLAB_NOTEBOOK_URL: ${{ vars.MOLAB_NOTEBOOK_URL || 'https://molab.marimo.io/notebooks/nb_Xbo9yBAiW4wEx3M96hNnz4/app' }}
           STORAGE_BACKEND: huggingface
           HF_BUCKET_ID: ${{ vars.HF_BUCKET_ID || 'uri410/audio' }}
           HF_ROOT_PREFIX: ${{ vars.HF_ROOT_PREFIX || 'novelreader' }}
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
-        run: python -m app.molab_worker --notebook-url "$env:MOLAB_NOTEBOOK_URL" --max-seconds 19000
+          NOVELREADER_JOB_ID: ${{ github.event.client_payload.job_id }}
+        run: python -m app.molab_worker --notebook-url "$env:MOLAB_NOTEBOOK_URL" --job-id "$env:NOVELREADER_JOB_ID" --max-seconds 19000

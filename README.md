@@ -66,14 +66,14 @@ marimo check notebook/NovelReader_Auto_Run.py
 
 ## Lưu trữ Hugging Face và MoLab app công khai
 
-GitHub Actions chạy bot Telegram và Windows queue worker cùng lúc. Bot ghi job vào Hugging Face; Windows worker poll hàng đợi và mở URL app MoLab công khai để xử lý, không cần đăng nhập. Sản phẩm, job và checkpoint cũng được lưu ở bucket này.
+GitHub Actions giữ bot Telegram hoạt động. Khi người dùng bấm **Bắt đầu**, bot gửi `repository_dispatch` kèm mã job; một workflow Windows riêng lần lượt tải file/cấu hình từ Hugging Face, mở URL app MoLab công khai, chạy notebook, lưu kết quả và bot gửi link về Telegram.
 
 ### Secrets và biến cần cấu hình
 
 Trong GitHub repository → **Settings → Secrets and variables → Actions**, thêm:
 
 - Secret `HF_TOKEN`: Hugging Face token có quyền ghi bucket.
-- Secret `GH_DISPATCH_TOKEN`: GitHub token dùng để tự bàn giao workflow bot trước giới hạn Actions. Token cần quyền `Actions: write` và `Contents: write` trên repo.
+- Secret `GH_DISPATCH_TOKEN`: GitHub token để bot khởi chạy workflow xử lý job và tự bàn giao workflow bot trước giới hạn Actions. Token cần quyền `Actions: write` và `Contents: write` trên repo.
 - Secret `TELEGRAM_BOT_TOKEN` và `ALLOWED_TELEGRAM_USER_IDS`.
 - Repository variable `HF_BUCKET_ID` để đổi bucket khỏi `uri410/audio` (không bắt buộc).
 - Repository variable `MOLAB_NOTEBOOK_URL` để dùng app URL khác (mặc định là app công khai NovelReader).
@@ -82,9 +82,9 @@ Trong GitHub repository → **Settings → Secrets and variables → Actions**, 
 
 ### Chạy workflow phối hợp
 
-1. Bấm **Run workflow** để khởi động bot Telegram và Windows queue worker song song.
-2. Worker dùng runner `windows-latest` do GitHub cấp, poll hàng đợi HF và mở [URL app MoLab công khai](https://molab.marimo.io/notebooks/nb_Xbo9yBAiW4wEx3M96hNnz4/app). Không cần VM self-hosted, phiên đăng nhập MoLab hay profile trình duyệt lưu trên HF.
-3. Gửi truyện cho bot rồi bấm **Bắt đầu**; worker tự nhận job từ hàng đợi chung.
+1. Bấm **Run workflow** để khởi động bot Telegram.
+2. Gửi truyện, chỉnh cấu hình nếu cần rồi bấm **Bắt đầu**. Bot lưu job vào HF và gửi mã job sang GitHub.
+3. Workflow job mở [URL app MoLab công khai](https://molab.marimo.io/notebooks/nb_Xbo9yBAiW4wEx3M96hNnz4/app), chạy notebook, lưu kết quả; bot gửi link về Telegram. Không cần VM self-hosted hay đăng nhập MoLab.
 
 ### Sơ đồ chữ: một nút Bắt đầu chạy toàn bộ job
 
@@ -99,16 +99,15 @@ Push main / lịch 5 giờ / Run workflow (không có menu mode)
                        │
                        ▼
     Bot ghi QUEUED + file + cấu hình vào Hugging Face
-                       ├────────────────────────────┐
-                       │                            │
-       Windows worker poll HF            Telegram bot tiếp tục poll
-       đồng thời với Telegram bot         và gửi status/result
+                       ▼
+       Bot gửi repository_dispatch(job_id) sang GitHub
                        │
                        ▼
-       Mở URL app MoLab công khai, không login
+       Workflow Windows xử lý đúng job theo trình tự
+       Mở MoLab → chạy notebook → lưu kết quả lên HF
                        │
                        ▼
-       Notebook dịch/TTS, lưu sản phẩm lên HF
+       Bot Telegram gửi trạng thái và link kết quả
 ```
 
 Bot khởi động khi push lên `main`, theo lịch dự phòng mỗi 5 giờ hoặc khi bấm **Run workflow**. Watchdog xếp lượt bot tiếp theo ở phút 320, chờ chu kỳ poll hiện tại kết thúc rồi bàn giao; trạng thái đã lưu trên HF nên không mất khi runner đổi lượt.
